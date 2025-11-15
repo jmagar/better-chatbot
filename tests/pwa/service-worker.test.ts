@@ -1,13 +1,15 @@
 import { describe, it, expect } from "vitest";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
 
 describe("Service Worker", () => {
-  it("should have service-worker.js file", () => {
+  it("should have service-worker.js file", async () => {
     const swPath = path.join(process.cwd(), "public", "service-worker.js");
-    expect(fs.existsSync(swPath)).toBe(true);
 
-    const swContent = fs.readFileSync(swPath, "utf-8");
+    // Check file exists
+    await expect(fs.access(swPath)).resolves.toBeUndefined();
+
+    const swContent = await fs.readFile(swPath, "utf-8");
 
     // Should have install event listener
     expect(swContent).toContain("install");
@@ -19,9 +21,9 @@ describe("Service Worker", () => {
     expect(swContent).toContain("fetch");
   });
 
-  it("should have valid JavaScript syntax", () => {
+  it("should have valid JavaScript syntax", async () => {
     const swPath = path.join(process.cwd(), "public", "service-worker.js");
-    const swContent = fs.readFileSync(swPath, "utf-8");
+    const swContent = await fs.readFile(swPath, "utf-8");
 
     // Basic syntax check - should not throw
     expect(() => new Function(swContent)).not.toThrow();
