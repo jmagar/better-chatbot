@@ -1,7 +1,14 @@
-// tests/pwa/manifest.test.ts
+// src/app/pwa/manifest.test.ts
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
+
+interface ManifestIcon {
+  src: string;
+  sizes: string;
+  type: string;
+  purpose: string;
+}
 
 describe("PWA Manifest", () => {
   it("should have valid manifest.json with required fields", () => {
@@ -23,7 +30,7 @@ describe("PWA Manifest", () => {
     expect(manifest.icons.length).toBeGreaterThanOrEqual(2);
 
     // Validate icon sizes
-    const iconSizes = manifest.icons.map((icon: any) => icon.sizes);
+    const iconSizes = manifest.icons.map((icon: ManifestIcon) => icon.sizes);
     expect(iconSizes).toContain("192x192");
     expect(iconSizes).toContain("512x512");
   });
