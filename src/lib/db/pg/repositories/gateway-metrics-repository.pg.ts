@@ -18,6 +18,17 @@ export interface GatewayMetricCreate {
 
 export const pgGatewayMetricsRepository = {
   async recordToolCall(data: GatewayMetricCreate): Promise<GatewayMetric> {
+    // Validate inputs
+    if (!data.presetId || !data.toolName) {
+      throw new Error('Invalid metric data: presetId and toolName required');
+    }
+    if (data.toolName.length > 100) {
+      throw new Error('Tool name too long (max 100 chars)');
+    }
+    if (data.executionTimeMs && data.executionTimeMs < 0) {
+      throw new Error('Execution time cannot be negative');
+    }
+
     // FIX: Set TTL for automatic cleanup
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + METRICS_TTL_DAYS);

@@ -1,0 +1,2 @@
+CREATE INDEX "idx_gateway_access_granted_by" ON "mcp_gateway_access" USING btree ("granted_by");--> statement-breakpoint
+CREATE INDEX "idx_gateway_metrics_preset_time" ON "mcp_gateway_metrics" USING btree ("preset_id","executed_at");

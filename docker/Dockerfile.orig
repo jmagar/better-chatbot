@@ -26,28 +26,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Install uv/uvx for MCP stdio servers and build dependencies for Python native extensions
-# git is required for npm packages with git dependencies
-# chromium and dependencies are required for chrome-devtools MCP server
-RUN apk add --no-cache \
-    curl bash build-base python3-dev git \
-    chromium chromium-chromedriver \
-    nss freetype harfbuzz ca-certificates ttf-freefont \
-    udev ttf-dejavu ttf-liberation
-
-# Install uv to /usr/local/bin so it's in PATH for all users
-RUN curl -LsSf https://astral.sh/uv/install.sh | env INSTALLER_NO_MODIFY_PATH=1 sh && \
-    mv /root/.local/bin/uv /usr/local/bin/uv && \
-    mv /root/.local/bin/uvx /usr/local/bin/uvx && \
-    chmod +x /usr/local/bin/uv /usr/local/bin/uvx
-
-# Configure Chromium for headless mode in Docker
-# PUPPETEER_EXECUTABLE_PATH is used by Puppeteer (and Chrome DevTools MCP) to locate the browser
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
-    CHROME_BIN=/usr/bin/chromium-browser \
-    CHROME_PATH=/usr/lib/chromium/ \
-    CHROMIUM_FLAGS="--disable-software-rasterizer --disable-dev-shm-usage --no-sandbox"
-
 COPY --from=builder /app/public ./public
 
 # Automatically leverage output traces to reduce image size

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createOllama } from "ollama-ai-provider-v2";
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { xai } from "@ai-sdk/xai";
@@ -28,18 +28,22 @@ const groq = createGroq({
   baseURL: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
   apiKey: process.env.GROQ_API_KEY,
 });
+const openaiProvider = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL,
+});
 
 const staticModels = {
   openai: {
-    "gpt-4.1": openai("gpt-4.1"),
-    "gpt-4.1-mini": openai("gpt-4.1-mini"),
-    "o4-mini": openai("o4-mini"),
-    o3: openai("o3"),
-    "gpt-5-chat": openai("gpt-5-chat-latest"),
-    "gpt-5": openai("gpt-5"),
-    "gpt-5-mini": openai("gpt-5-mini"),
-    "gpt-5-codex": openai("gpt-5-codex"),
-    "gpt-5-nano": openai("gpt-5-nano"),
+    "gpt-4.1": openaiProvider("gpt-4.1"),
+    "gpt-4.1-mini": openaiProvider("gpt-4.1-mini"),
+    "o4-mini": openaiProvider("o4-mini"),
+    o3: openaiProvider("o3"),
+    "gpt-5-chat": openaiProvider("gpt-5-chat-latest"),
+    "gpt-5": openaiProvider("gpt-5"),
+    "gpt-5-mini": openaiProvider("gpt-5-mini"),
+    "gpt-5-codex": openaiProvider("gpt-5-codex"),
+    "gpt-5-nano": openaiProvider("gpt-5-nano"),
   },
   google: {
     "gemini-2.5-flash-lite": google("gemini-2.5-flash-lite"),
@@ -160,6 +164,14 @@ const {
   providers: openaiCompatibleModels,
   unsupportedModels: openaiCompatibleUnsupportedModels,
 } = createOpenAICompatibleModels(openaiCompatibleProviders);
+
+// Register file support for all OpenAI-compatible models
+// Assumes they support the same file types as standard OpenAI models
+Object.values(openaiCompatibleModels).forEach((providerModels) => {
+  Object.values(providerModels).forEach((model) => {
+    registerFileSupport(model, ANTHROPIC_FILE_MIME_TYPES);
+  });
+});
 
 const allModels = { ...openaiCompatibleModels, ...staticModels };
 

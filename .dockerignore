@@ -54,3 +54,31 @@ local-data
 .mcp-config.json
 .next
 .changeset
+
+# Claude Code configuration
+**/.claude
+.claude
+/config
+**/config/.claude
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+.docs
+docs
+
+# Environment
+.env*
+!.env.example
+
+# Cache
+.cache
+.turbo
+
+# IDE
+.vscode
+.idea

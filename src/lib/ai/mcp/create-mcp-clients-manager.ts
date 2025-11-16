@@ -90,13 +90,15 @@ export class MCPClientsManager {
         if (this.storage) {
           await this.storage.init(this);
           const configs = await this.storage.loadAll();
-          await Promise.all(
-            configs.map(({ id, name, config }) =>
-              this.addClient(id, name, config).catch(() => {
-                `ignore error`;
-              }),
-            ),
-          );
+          // Initialize clients sequentially to avoid concurrent npm exec operations
+          // that can cause race conditions during package installation
+          for (const { id, name, config } of configs) {
+            try {
+              await this.addClient(id, name, config);
+            } catch {
+              // ignore error
+            }
+          }
         }
       })
       .watch(() => {
@@ -154,7 +156,9 @@ export class MCPClientsManager {
   async addClient(id: string, name: string, serverConfig: MCPServerConfig) {
     if (this.clients.has(id)) {
       const prevClient = this.clients.get(id)!;
-      void prevClient.client.disconnect();
+      // Await disconnect to prevent race condition where old transport
+      // closes after new client connects, causing "Connection closed" errors
+      await prevClient.client.disconnect();
     }
     const client = createMCPClient(id, name, serverConfig, {
       autoDisconnectSeconds: this.autoDisconnectSeconds,
@@ -198,7 +202,7 @@ export class MCPClientsManager {
     const client = this.clients.get(id);
     this.clients.delete(id);
     if (client) {
-      void client.client.disconnect();
+      await client.client.disconnect();
     }
   }
 

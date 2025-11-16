@@ -77,18 +77,34 @@ function updateEnvVariable(
   }
 }
 
-const envPath = path.join(ROOT, ".env");
+const rootEnvPath = path.join(ROOT, ".env");
+const dockerEnvPath = path.join(ROOT, "docker", ".env");
 
 const openaiCompatibleProviders = await load();
 
-const success = updateEnvVariable(
-  envPath,
+const jsonValue = JSON.stringify(openaiCompatibleProviders);
+
+// Update root .env
+const rootSuccess = updateEnvVariable(
+  rootEnvPath,
   "OPENAI_COMPATIBLE_DATA",
-  JSON.stringify(openaiCompatibleProviders),
+  jsonValue,
 );
 
-if (success) {
-  console.log("Operation completed. Check your .env file!");
+// Update docker .env (used by Docker Compose)
+const dockerSuccess = updateEnvVariable(
+  dockerEnvPath,
+  "OPENAI_COMPATIBLE_DATA",
+  jsonValue,
+);
+
+if (rootSuccess && dockerSuccess) {
+  console.log("Operation completed. Updated both .env and docker/.env files!");
+  console.log("\nNext steps:");
+  console.log("1. Restart the Docker container: docker compose -f docker/compose.yml restart");
+  console.log("2. Or rebuild if needed: docker compose -f docker/compose.yml up -d --build");
 } else {
   console.log("Operation failed.");
+  if (!rootSuccess) console.log("  - Failed to update .env");
+  if (!dockerSuccess) console.log("  - Failed to update docker/.env");
 }

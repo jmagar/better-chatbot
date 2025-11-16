@@ -112,6 +112,8 @@ export const pgGatewayPresetRepository = {
 
   // FIX: JOIN query to avoid N+1
   async findBySlugWithServers(slug: string): Promise<GatewayPresetWithServers | null> {
+    validateSlug(slug);
+
     const result = await db
       .select()
       .from(McpGatewayPresetTable)
@@ -132,6 +134,8 @@ export const pgGatewayPresetRepository = {
   },
 
   async findActiveBySlugWithServers(slug: string): Promise<GatewayPresetWithServers | null> {
+    validateSlug(slug);
+
     const result = await db
       .select()
       .from(McpGatewayPresetTable)
@@ -196,6 +200,10 @@ export const pgGatewayPresetRepository = {
       })
       .where(eq(McpGatewayPresetTable.id, id))
       .returning();
+
+    if (!updated) {
+      throw new Error(`Preset not found: ${id}`);
+    }
 
     return updated;
   },

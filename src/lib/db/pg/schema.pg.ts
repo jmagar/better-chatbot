@@ -376,7 +376,7 @@ export const McpGatewayServerTable = pgTable(
       .notNull()
       .references(() => McpServerTable.id, { onDelete: "cascade" }),
     enabled: boolean("enabled").notNull().default(true),
-    allowedToolNames: jsonb("allowed_tool_names").$type<string[]>().notNull().default([]),
+    allowedToolNames: jsonb("allowed_tool_names").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -415,6 +415,7 @@ export const McpGatewayAccessTable = pgTable(
       table.userId
     ),
     userIdIdx: index("idx_gateway_access_user_id").on(table.userId),
+    grantedByIdx: index("idx_gateway_access_granted_by").on(table.grantedBy),
   })
 );
 
@@ -442,6 +443,7 @@ export const McpGatewayMetricsTable = pgTable(
     executedAtIdx: index("idx_gateway_metrics_executed_at").on(table.executedAt),
     expiresAtIdx: index("idx_gateway_metrics_expires_at").on(table.expiresAt), // FIX: For cleanup job
     userIdIdx: index("idx_gateway_metrics_user_id").on(table.userId),
+    presetTimeIdx: index("idx_gateway_metrics_preset_time").on(table.presetId, table.executedAt),
   })
 );
 

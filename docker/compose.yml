@@ -3,6 +3,7 @@ services:
     build:
       context: ..
       dockerfile: ./docker/Dockerfile
+    container_name: better-chatbot
     ports:
       - '3000:3000'
     environment:
@@ -13,24 +14,44 @@ services:
       - 8.8.8.8 # Google's public DNS server
       - 8.8.4.4 # Google's public DNS server
     networks:
-      - better-chatbot-networks
+      - jakenet
     depends_on:
-      - postgres
+      - better-chatbot_db
+      - better-chatbot_cache
     restart: unless-stopped
+    volumes:
+      - /mnt/cache/appdata:/appdata:ro
+      - /mnt/cache/compose:/compose:ro
+      - /mnt/cache/code:/code:rw
+      - /mnt/cache/docs:/docs:rw
+      - /mnt/user/data/:/data:ro
+      - /var/run/docker.sock:/var/run/docker.sock  # Add this line
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
 
-  postgres:
+  better-chatbot_db:
     image: postgres:17
+    container_name: better-chatbot_db
     env_file:
       - .env
     networks:
-      - better-chatbot-networks
+      - jakenet
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - /mnt/cache/appdata/better-chatbot_db:/var/lib/postgresql/data
     restart: unless-stopped
 
-volumes:
-  postgres_data:
+  better-chatbot_cache:
+    image: redis:7-alpine
+    container_name: better-chatbot_cache
+    command: redis-server --appendonly yes --appendfsync everysec
+    ports:
+      - '6380:6379'
+    networks:
+      - jakenet
+    volumes:
+      - /mnt/cache/appdata/better-chatbot_cache:/data
+    restart: unless-stopped
 
 networks:
-  better-chatbot-networks:
-    driver: bridge
+  jakenet:
+    external: true

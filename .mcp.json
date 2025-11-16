@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "github-chat": {
+      "command": "uvx",
+      "args": [
+        "github-chat-mcp"
+      ],
+      "env": {}
+    }
+  }
+}
