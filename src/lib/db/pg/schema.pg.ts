@@ -12,6 +12,9 @@ import {
   unique,
   varchar,
   index,
+  uniqueIndex,
+  integer,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { isNotNull } from "drizzle-orm";
 import { DBWorkflow, DBEdge, DBNode } from "app-types/workflow";
@@ -320,6 +323,157 @@ export const McpOAuthSessionTable = pgTable(
       .where(isNotNull(t.tokens)),
   ],
 );
+
+// ========================================
+// MCP Gateway System Tables
+// ========================================
+
+export const McpGatewayPresetTable = pgTable(
+  "mcp_gateway_presets",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    visibility: varchar("visibility", {
+      length: 20,
+      enum: ["public", "private", "invite_only"],
+    })
+      .notNull()
+      .default("private"),
+    status: varchar("status", {
+      length: 20,
+      enum: ["active", "disabled", "archived"],
+    })
+      .notNull()
+      .default("active"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index("idx_gateway_presets_user_id").on(table.userId),
+    slugIdx: uniqueIndex("idx_gateway_presets_slug").on(table.userId, table.slug),
+    statusIdx: index("idx_gateway_presets_status").on(table.status),
+    visibilityIdx: index("idx_gateway_presets_visibility").on(table.visibility),
+  })
+);
+
+export type GatewayPreset = typeof McpGatewayPresetTable.$inferSelect;
+export type GatewayPresetInsert = typeof McpGatewayPresetTable.$inferInsert;
+
+export const McpGatewayServerTable = pgTable(
+  "mcp_gateway_servers",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    presetId: uuid("preset_id")
+      .notNull()
+      .references(() => McpGatewayPresetTable.id, { onDelete: "cascade" }),
+    mcpServerId: uuid("mcp_server_id")
+      .notNull()
+      .references(() => McpServerTable.id, { onDelete: "cascade" }),
+    enabled: boolean("enabled").notNull().default(true),
+    allowedToolNames: jsonb("allowed_tool_names").$type<string[]>().notNull().default([]),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    presetIdIdx: index("idx_gateway_servers_preset_id").on(table.presetId),
+    mcpServerIdIdx: index("idx_gateway_servers_mcp_server_id").on(table.mcpServerId),
+    uniquePresetServer: uniqueIndex("idx_gateway_servers_unique").on(
+      table.presetId,
+      table.mcpServerId
+    ),
+  })
+);
+
+export type GatewayServer = typeof McpGatewayServerTable.$inferSelect;
+export type GatewayServerInsert = typeof McpGatewayServerTable.$inferInsert;
+
+// FIX: Add access table for invite-only ACL
+export const McpGatewayAccessTable = pgTable(
+  "mcp_gateway_access",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    presetId: uuid("preset_id")
+      .notNull()
+      .references(() => McpGatewayPresetTable.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    grantedAt: timestamp("granted_at").notNull().defaultNow(),
+    grantedBy: uuid("granted_by")
+      .notNull()
+      .references(() => UserTable.id),
+  },
+  (table) => ({
+    presetUserIdx: uniqueIndex("idx_gateway_access_preset_user").on(
+      table.presetId,
+      table.userId
+    ),
+    userIdIdx: index("idx_gateway_access_user_id").on(table.userId),
+  })
+);
+
+export type GatewayAccess = typeof McpGatewayAccessTable.$inferSelect;
+export type GatewayAccessInsert = typeof McpGatewayAccessTable.$inferInsert;
+
+// FIX: Add metrics table with TTL and partitioning support
+export const McpGatewayMetricsTable = pgTable(
+  "mcp_gateway_metrics",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    presetId: uuid("preset_id")
+      .notNull()
+      .references(() => McpGatewayPresetTable.id, { onDelete: "cascade" }),
+    toolName: text("tool_name").notNull(),
+    executedAt: timestamp("executed_at").notNull().defaultNow(),
+    expiresAt: timestamp("expires_at").notNull(), // FIX: TTL for cleanup
+    success: boolean("success").notNull(),
+    executionTimeMs: integer("execution_time_ms"),
+    userId: uuid("user_id").references(() => UserTable.id, { onDelete: "set null" }),
+    errorMessage: text("error_message"),
+  },
+  (table) => ({
+    presetIdIdx: index("idx_gateway_metrics_preset_id").on(table.presetId),
+    executedAtIdx: index("idx_gateway_metrics_executed_at").on(table.executedAt),
+    expiresAtIdx: index("idx_gateway_metrics_expires_at").on(table.expiresAt), // FIX: For cleanup job
+    userIdIdx: index("idx_gateway_metrics_user_id").on(table.userId),
+  })
+);
+
+export type GatewayMetric = typeof McpGatewayMetricsTable.$inferSelect;
+export type GatewayMetricInsert = typeof McpGatewayMetricsTable.$inferInsert;
+
+// FIX: Add events table for audit trail
+export const McpGatewayEventTable = pgTable(
+  "mcp_gateway_events",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    aggregateId: uuid("aggregate_id").notNull(),
+    aggregateType: varchar("aggregate_type", { length: 50 }).notNull(),
+    eventType: varchar("event_type", { length: 100 }).notNull(),
+    eventData: jsonb("event_data").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    occurredAt: timestamp("occurred_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    aggregateIdx: index("idx_gateway_events_aggregate").on(
+      table.aggregateId,
+      table.aggregateType
+    ),
+    userIdIdx: index("idx_gateway_events_user_id").on(table.userId),
+    occurredAtIdx: index("idx_gateway_events_occurred_at").on(table.occurredAt),
+  })
+);
+
+export type GatewayEvent = typeof McpGatewayEventTable.$inferSelect;
+export type GatewayEventInsert = typeof McpGatewayEventTable.$inferInsert;
 
 export type McpServerEntity = typeof McpServerTable.$inferSelect;
 export type ChatThreadEntity = typeof ChatThreadTable.$inferSelect;
