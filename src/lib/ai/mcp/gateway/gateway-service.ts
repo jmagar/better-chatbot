@@ -1,17 +1,26 @@
-import type { MCPClientsManager } from "@/lib/ai/mcp/create-mcp-clients-manager";
-import type { GatewayPresetConfig, VercelAIMcpTool } from "./types";
+import type { MCPClientsManager } from "lib/ai/mcp/create-mcp-clients-manager";
+import type { VercelAIMcpTool } from "app-types/mcp";
+import type { GatewayPresetConfig } from "./types";
 import CircuitBreaker from "opossum";
 
-// FIX: Add timeout wrapper
+// FIX: Add timeout wrapper with proper cleanup
 async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
   errorMessage: string,
 ): Promise<T> {
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error(errorMessage)), timeoutMs),
-  );
-  return Promise.race([promise, timeoutPromise]);
+  let timeoutHandle: NodeJS.Timeout;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error(errorMessage)),
+      timeoutMs,
+    );
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutHandle);
+  });
 }
 
 export class GatewayService {
@@ -31,11 +40,31 @@ export class GatewayService {
       },
     );
 
+    // Add event listeners for circuit breaker state changes
+    this.toolCallBreaker.on("open", () => {
+      console.warn(
+        "[GatewayService] Circuit breaker opened - MCP service degraded",
+      );
+    });
+
+    this.toolCallBreaker.on("halfOpen", () => {
+      console.info(
+        "[GatewayService] Circuit breaker half-open - testing recovery",
+      );
+    });
+
+    this.toolCallBreaker.on("close", () => {
+      console.info(
+        "[GatewayService] Circuit breaker closed - service recovered",
+      );
+    });
+
     // Fallback for circuit breaker
-    this.toolCallBreaker.fallback(() => ({
-      error: "Service temporarily unavailable",
-      retryAfter: 30,
-    }));
+    this.toolCallBreaker.fallback(() => {
+      throw new Error(
+        "MCP service temporarily unavailable. Circuit breaker is open. Retry after 30 seconds.",
+      );
+    });
   }
 
   async getPresetTools(
@@ -84,6 +113,19 @@ export class GatewayService {
     toolName: string,
     args: unknown,
   ): Promise<unknown> {
+    // Validate serverId and toolName are non-empty
+    if (!serverId || typeof serverId !== "string") {
+      throw new Error("Invalid serverId: must be non-empty string");
+    }
+    if (!toolName || typeof toolName !== "string") {
+      throw new Error("Invalid toolName: must be non-empty string");
+    }
+
+    // args can be unknown but should at least be defined
+    if (args === undefined) {
+      args = {};
+    }
+
     // FIX: Use circuit breaker with timeout (30 seconds)
     return this.toolCallBreaker.fire(serverId, toolName, args);
   }

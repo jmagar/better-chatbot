@@ -17,12 +17,3 @@ export interface GatewayServerConfig {
   enabled: boolean;
   allowedToolNames: string[];
 }
-
-export interface VercelAIMcpTool {
-  _mcpServerId: string;
-  _mcpServerName: string;
-  _originToolName: string;
-  description?: string;
-  parameters: Record<string, unknown>;
-  [key: string]: unknown;
-}
