@@ -41,8 +41,7 @@ export const metadata: Metadata = {
   viewport: {
     width: "device-width",
     initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
+    // Removed maximumScale and userScalable for WCAG 2.1 AA compliance
   },
   themeColor: "#000000",
 };
