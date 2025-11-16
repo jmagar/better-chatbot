@@ -36,6 +36,39 @@ You only need **one AI Provider API Key** (OpenAI, Claude, Gemini, etc.). Everyt
 
 Built with Vercel AI SDK and Next.js, combining the best features of leading AI services into one platform.
 
+## PWA Support
+
+This app is installable as a Progressive Web App (PWA) on Android devices.
+
+### Installation
+
+1. Open the app in Chrome on Android
+2. Tap the menu (⋮) and select "Add to Home Screen"
+3. The app will be installed and appear on your home screen
+4. Tap the icon to launch the app in standalone mode
+
+### Features
+
+- Installable on Android home screen
+- Standalone mode (no browser UI)
+- App icon and splash screen
+- Customizable theme colors
+
+### Development
+
+PWA files are located in:
+- `/public/manifest.json` - Web app manifest
+- `/public/service-worker.js` - Service worker (minimal, network-first)
+- `/src/app/register-sw.tsx` - Service worker registration component
+
+For detailed testing instructions, see [pwa-testing.md](docs/pwa-testing.md).
+
+### Requirements
+
+- HTTPS in production (required for service workers)
+- Modern browser with service worker support
+- Android Chrome 76+ recommended for installation
+
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)
