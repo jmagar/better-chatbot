@@ -13,6 +13,26 @@ export interface MemoryCacheOptions {
   maxMemoryMB?: number;
 }
 
+/**
+ * In-memory cache implementation with LRU eviction.
+ *
+ * Features:
+ * - LRU eviction when maxSize is exceeded
+ * - Pattern-based deletion with prefix optimization
+ * - ReDoS protection
+ *
+ * Memory Limits:
+ * - maxSize: Maximum number of entries (default: 10,000)
+ * - maxMemoryMB: Maximum size per entry, not total cache size (default: 100MB)
+ *
+ * Note: Total memory usage is bounded by maxSize * (maxMemoryMB * 0.1) in worst case.
+ * With defaults, this means up to 10,000 entries * 10MB = 100GB theoretical maximum.
+ * In practice, average entry sizes are much smaller (typically KB, not MB).
+ *
+ * @example
+ * const cache = new MemoryCache({ maxSize: 1000, maxMemoryMB: 50 });
+ * await cache.set('key', 'value', 5000); // 5 second TTL
+ */
 export class MemoryCache implements Cache {
   private cache: Map<string, CacheEntry>;
   private prefixIndex: Map<string, Set<string>>;
@@ -110,8 +130,8 @@ export class MemoryCache implements Cache {
 
       for (const key of keys) {
         this.cache.delete(key);
+        this.removeFromPrefixIndex(key);
       }
-      this.prefixIndex.delete(prefix);
       return;
     }
 
