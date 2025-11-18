@@ -16,7 +16,6 @@ import { Card, CardContent, CardHeader } from "ui/card";
 import JsonView from "ui/json-view";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { memo, useCallback, useMemo, useState } from "react";
-import Link from "next/link";
 import { useSWRConfig } from "swr";
 import { safe } from "ts-safe";
 
@@ -33,6 +32,7 @@ import type { MCPServerInfo, MCPToolInfo } from "app-types/mcp";
 import { ToolDetailPopup } from "./tool-detail-popup";
 import { useTranslations } from "next-intl";
 import { Separator } from "ui/separator";
+import { MCPStatusIndicator } from "./mcp-status-indicator";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { toast } from "sonner";
 import { appStore } from "@/app/store";
@@ -68,6 +68,17 @@ export const MCPCard = memo(function MCPCard({
     [user?.role],
   );
   const { copied, copy } = useCopy(2000);
+
+  const computedStatus = useMemo(():
+    | "connected"
+    | "error"
+    | "loading"
+    | "authorizing" => {
+    if (error) return "error";
+    if (status === "loading") return "loading";
+    if (status === "authorizing") return "authorizing";
+    return "connected";
+  }, [error, status]);
 
   const isLoading = useMemo(() => {
     return isProcessing || status === "loading";
@@ -156,6 +167,8 @@ export const MCPCard = memo(function MCPCard({
         className="flex items-center gap-1 mb-2"
       >
         {isLoading && <Loader className="size-4 z-20 animate-spin mr-1" />}
+
+        <MCPStatusIndicator status={computedStatus} />
 
         <h4 className="font-bold text-xs sm:text-lg flex items-center gap-1">
           {name}
