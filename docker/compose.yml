@@ -21,7 +21,7 @@ services:
     restart: unless-stopped
     volumes:
       - /mnt/cache/appdata:/appdata:ro
-      - /mnt/cache/compose:/compose:ro
+      - /mnt/cache/compose:/compose:rw
       - /mnt/cache/code:/code:rw
       - /mnt/cache/docs:/docs:rw
       - /mnt/user/data/:/data:ro

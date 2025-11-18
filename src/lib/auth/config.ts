@@ -15,7 +15,8 @@ try {
   if (typeof window !== "undefined" || process.env.NEXT_RUNTIME) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const react = require("react");
-    experimental_taintUniqueValue = react.experimental_taintUniqueValue;
+    experimental_taintUniqueValue =
+      react.experimental_taintUniqueValue ?? experimental_taintUniqueValue;
   }
 } catch (_e) {
   // No-op for non-React contexts

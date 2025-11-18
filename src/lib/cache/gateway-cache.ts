@@ -1,4 +1,4 @@
-import { serverCache } from "./cache";
+import { serverCache } from "lib/cache";
 
 const CACHE_PREFIX = "gateway";
 const PRESET_CONFIG_TTL_MS = 5 * 60 * 1000; // 5 minutes

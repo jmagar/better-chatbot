@@ -75,6 +75,17 @@ export class RedisCache implements Cache {
     }
   }
 
+  async deletePattern(pattern: string): Promise<void> {
+    if (!pattern) {
+      return;
+    }
+
+    const keys = await this.redis.keys(pattern);
+    if (keys.length > 0) {
+      await this.redis.del(...keys);
+    }
+  }
+
   async getAll(): Promise<Map<string, unknown>> {
     const result = new Map<string, unknown>();
     const pattern = this.keyPrefix ? this.keyPrefix + "*" : "*";

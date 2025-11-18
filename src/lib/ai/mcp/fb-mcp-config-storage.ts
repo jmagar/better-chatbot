@@ -23,11 +23,19 @@ const logger = defaultLogger.withDefaults({
  */
 export function createFileBasedMCPConfigsStorage(
   path?: string,
+  fsModule: Partial<typeof import("fs/promises")> = {
+    mkdir,
+    readFile,
+    writeFile,
+  },
 ): MCPConfigStorage {
   const configPath = path || MCP_CONFIG_PATH;
   let watcher: FSWatcher | null = null;
   let manager: MCPClientsManager;
   const debounce = createDebounce();
+  const read = fsModule.readFile ?? readFile;
+  const mkdirFn = fsModule.mkdir ?? mkdir;
+  const write = fsModule.writeFile ?? writeFile;
 
   /**
    * Reads config from file
@@ -36,7 +44,9 @@ export function createFileBasedMCPConfigsStorage(
     (typeof McpServerTable.$inferSelect)[]
   > {
     try {
-      const configText = await readFile(configPath, { encoding: "utf-8" });
+      const configText = await read(configPath, {
+        encoding: "utf-8",
+      });
       const config = JSON.parse(configText ?? "{}") as {
         [name: string]: MCPServerConfig;
       };
@@ -61,8 +71,8 @@ export function createFileBasedMCPConfigsStorage(
     config: Record<string, MCPServerConfig>,
   ): Promise<void> {
     const dir = dirname(configPath);
-    await mkdir(dir, { recursive: true });
-    await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
+    await mkdirFn(dir, { recursive: true });
+    await write(configPath, JSON.stringify(config, null, 2), "utf-8");
   }
 
   async function checkAndRefreshClients() {

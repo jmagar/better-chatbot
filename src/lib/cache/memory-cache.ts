@@ -39,9 +39,11 @@ export class MemoryCache implements Cache {
   private defaultTtlMs: number;
   private maxSize: number;
   private maxMemoryMB: number;
+  public readonly store: Map<string, CacheEntry>;
 
   constructor(opts: MemoryCacheOptions = {}) {
     this.cache = new Map();
+    this.store = this.cache;
     this.prefixIndex = new Map();
     this.defaultTtlMs = opts.defaultTtlMs ?? Infinity;
     this.maxSize = opts.maxSize ?? 10000;

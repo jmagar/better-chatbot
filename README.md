@@ -401,6 +401,16 @@ Step-by-step setup guides for running and configuring better-chatbot.
 
 - How to add and configure MCP servers in your environment
 
+#### [📦 MCP Configuration Export](./docs/mcp-export.md)
+
+- Export MCP server configurations from database to JSON for backup or integration with Claude Desktop/CLI
+- Web UI: copy single configs from each MCP card or download the entire `.mcp-config-YYYY-MM-DD.json` file via the Add Server split button dropdown (owner-only access).
+
+#### [🧱 MCP Servers High-Density UI](./docs/mcp-servers-ui.md)
+
+- Dedicated `/mcp/servers` page with grid/list toggle, compact mode, search, tags, pinned/recent sections, and a command palette for 30+ MCP servers.
+- Includes virtualization for the “All servers” section plus keyboard-accessible cards (`Enter`/`Space` to expand) and Cmd/Ctrl+K palette navigation.
+
 #### [🐳 Docker Hosting Guide](./docs/tips-guides/docker.md)
 
 - How to self-host the chatbot using Docker, including environment configuration.

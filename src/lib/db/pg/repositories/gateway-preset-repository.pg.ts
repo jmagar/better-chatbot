@@ -3,7 +3,6 @@ import {
   McpGatewayPresetTable,
   McpGatewayServerTable,
   type GatewayPreset,
-  type GatewayPresetInsert,
 } from "@/lib/db/pg/schema.pg";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -40,7 +39,11 @@ function validateUserId(userId: string): void {
     throw new Error("Invalid userId");
   }
   // UUID v4 format
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      userId,
+    )
+  ) {
     throw new Error("Invalid userId format");
   }
 }
@@ -54,7 +57,9 @@ function validateSlug(slug: string): void {
     throw new Error("Slug must be 3-50 characters");
   }
   if (!/^[a-z0-9-]+$/.test(slug)) {
-    throw new Error("Invalid slug format: must be lowercase letters, numbers, and hyphens");
+    throw new Error(
+      "Invalid slug format: must be lowercase letters, numbers, and hyphens",
+    );
   }
   if (slug.startsWith("-") || slug.endsWith("-")) {
     throw new Error("Slug cannot start or end with hyphen");
@@ -111,7 +116,9 @@ export const pgGatewayPresetRepository = {
   },
 
   // FIX: JOIN query to avoid N+1
-  async findBySlugWithServers(slug: string): Promise<GatewayPresetWithServers | null> {
+  async findBySlugWithServers(
+    slug: string,
+  ): Promise<GatewayPresetWithServers | null> {
     validateSlug(slug);
 
     const result = await db
@@ -119,7 +126,7 @@ export const pgGatewayPresetRepository = {
       .from(McpGatewayPresetTable)
       .leftJoin(
         McpGatewayServerTable,
-        eq(McpGatewayServerTable.presetId, McpGatewayPresetTable.id)
+        eq(McpGatewayServerTable.presetId, McpGatewayPresetTable.id),
       )
       .where(eq(McpGatewayPresetTable.slug, slug));
 
@@ -133,7 +140,9 @@ export const pgGatewayPresetRepository = {
     return { ...preset, servers };
   },
 
-  async findActiveBySlugWithServers(slug: string): Promise<GatewayPresetWithServers | null> {
+  async findActiveBySlugWithServers(
+    slug: string,
+  ): Promise<GatewayPresetWithServers | null> {
     validateSlug(slug);
 
     const result = await db
@@ -141,13 +150,13 @@ export const pgGatewayPresetRepository = {
       .from(McpGatewayPresetTable)
       .leftJoin(
         McpGatewayServerTable,
-        eq(McpGatewayServerTable.presetId, McpGatewayPresetTable.id)
+        eq(McpGatewayServerTable.presetId, McpGatewayPresetTable.id),
       )
       .where(
         and(
           eq(McpGatewayPresetTable.slug, slug),
-          eq(McpGatewayPresetTable.status, "active")
-        )
+          eq(McpGatewayPresetTable.status, "active"),
+        ),
       );
 
     if (result.length === 0) return null;
@@ -170,7 +179,10 @@ export const pgGatewayPresetRepository = {
       .orderBy(desc(McpGatewayPresetTable.createdAt));
   },
 
-  async findBySlug(userId: string, slug: string): Promise<GatewayPreset | null> {
+  async findBySlug(
+    userId: string,
+    slug: string,
+  ): Promise<GatewayPreset | null> {
     validateUserId(userId);
     validateSlug(slug);
 
@@ -180,8 +192,8 @@ export const pgGatewayPresetRepository = {
       .where(
         and(
           eq(McpGatewayPresetTable.userId, userId),
-          eq(McpGatewayPresetTable.slug, slug)
-        )
+          eq(McpGatewayPresetTable.slug, slug),
+        ),
       )
       .limit(1);
 
@@ -209,6 +221,8 @@ export const pgGatewayPresetRepository = {
   },
 
   async delete(id: string): Promise<void> {
-    await db.delete(McpGatewayPresetTable).where(eq(McpGatewayPresetTable.id, id));
+    await db
+      .delete(McpGatewayPresetTable)
+      .where(eq(McpGatewayPresetTable.id, id));
   },
 };

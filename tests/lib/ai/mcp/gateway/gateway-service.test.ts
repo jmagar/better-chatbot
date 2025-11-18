@@ -4,7 +4,6 @@ import type { MCPClientsManager } from "@/lib/ai/mcp/create-mcp-clients-manager"
 vi.mock("@/lib/ai/mcp/create-mcp-clients-manager");
 
 describe("GatewayService", () => {
-  // biome-ignore lint/suspicious/noExplicitAny: dynamic import type
   let GatewayService: any;
   let mockMcpManager: Partial<MCPClientsManager>;
 

@@ -1,11 +1,12 @@
 {
   "mcpServers": {
-    "github-chat": {
-      "command": "uvx",
+    "chrome-devtools": {
+      "command": "npx",
       "args": [
-        "github-chat-mcp"
-      ],
-      "env": {}
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--browserUrl=http://10.2.0.24:9223"
+      ]
     }
   }
 }

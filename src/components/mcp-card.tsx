@@ -1,7 +1,8 @@
 "use client";
 import {
+  Check,
   ChevronRight,
-  FlaskConical,
+  Copy,
   ShieldAlertIcon,
   Loader,
   RotateCw,
@@ -33,11 +34,13 @@ import { ToolDetailPopup } from "./tool-detail-popup";
 import { useTranslations } from "next-intl";
 import { Separator } from "ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
+import { toast } from "sonner";
 import { appStore } from "@/app/store";
 import { isString } from "lib/utils";
 import { redriectMcpOauth } from "lib/ai/mcp/oauth-redirect";
 import { BasicUser } from "app-types/user";
 import { canChangeVisibilityMCP } from "lib/auth/client-permissions";
+import { useCopy } from "@/hooks/use-copy";
 
 // Main MCPCard component
 export const MCPCard = memo(function MCPCard({
@@ -64,6 +67,7 @@ export const MCPCard = memo(function MCPCard({
     () => canChangeVisibilityMCP(user?.role),
     [user?.role],
   );
+  const { copied, copy } = useCopy(2000);
 
   const isLoading = useMemo(() => {
     return isProcessing || status === "loading";
@@ -71,6 +75,21 @@ export const MCPCard = memo(function MCPCard({
 
   const needsAuthorization = status === "authorizing";
   const isDisabled = isLoading || needsAuthorization;
+
+  const handleCopyConfig = useCallback(() => {
+    if (!config) {
+      toast.error(t("MCP.copyConfigError"));
+      return;
+    }
+
+    try {
+      const configJson = JSON.stringify({ [name]: config }, null, 2);
+      copy(configJson);
+      toast.success(t("MCP.configCopied"));
+    } catch (_error) {
+      toast.error(t("MCP.copyConfigError"));
+    }
+  }, [config, copy, name, t]);
 
   // Check permissions (kept for potential future use)
 
@@ -166,6 +185,29 @@ export const MCPCard = memo(function MCPCard({
             </div>
           </>
         )}
+        {config && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                onClick={handleCopyConfig}
+                disabled={isDisabled}
+                data-testid={`copy-config-${name}`}
+              >
+                {copied ? (
+                  <Check className="size-4 text-green-500" />
+                ) : (
+                  <Copy className="size-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{t("copyConfig")}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -196,32 +238,6 @@ export const MCPCard = memo(function MCPCard({
           </TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {isDisabled ? (
-              <div className="cursor-pointer hidden sm:block">
-                <Button variant="ghost" size="icon" disabled>
-                  <FlaskConical className="size-3.5" />
-                </Button>
-              </div>
-            ) : (
-              <Link
-                href={`/mcp/test/${encodeURIComponent(id)}`}
-                className="cursor-pointer hidden sm:block"
-              >
-                <Button variant="ghost" size="icon">
-                  <FlaskConical className="size-3.5" />
-                </Button>
-              </Link>
-            )}
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{t("toolsTest")}</p>
-          </TooltipContent>
-        </Tooltip>
-        <div className="h-4">
-          <Separator orientation="vertical" />
-        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

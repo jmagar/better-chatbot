@@ -125,3 +125,14 @@
 - All PWA files are present in the public directory
 - Production build completes without errors
 - Files are ready for deployment and testing
+
+### Dev Verification - 18:12:55 | 11/16/2025
+
+- Dev server launched with `VERCEL=1 pnpm dev` (port 3001 was automatically selected because 3000 was already bound)
+- Manifest and service worker return 200 responses:
+  - `curl -I http://localhost:3001/manifest.json`
+  - `curl -I http://localhost:3001/service-worker.js`
+- Automated tests
+  - `pnpm test tests/pwa/sw-registration.test.ts`
+  - `PWA_TEST_BASE_URL=http://localhost:3001 pnpm test tests/pwa/lighthouse.test.ts`
+- Result: ✓ Manifest accessible without auth redirects, ✓ SW registration verified, ✓ Installability pre-check passes

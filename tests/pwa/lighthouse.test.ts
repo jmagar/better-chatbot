@@ -29,7 +29,7 @@ describe("PWA Installability Prerequisites", () => {
     // Run: pnpm dev
     // Then: pnpm test tests/pwa/lighthouse.test.ts
 
-    const baseUrl = "http://localhost:3000";
+    const baseUrl = process.env.PWA_TEST_BASE_URL || "http://localhost:3000";
 
     // Check if server is running on port 3000
     try {

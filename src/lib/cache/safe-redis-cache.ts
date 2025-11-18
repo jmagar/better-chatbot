@@ -153,6 +153,23 @@ export class SafeRedisCache implements Cache {
     );
   }
 
+  async deletePattern(pattern: string): Promise<void> {
+    if (!pattern) {
+      return this.serverCache.deletePattern
+        ? this.serverCache.deletePattern(pattern)
+        : Promise.resolve();
+    }
+
+    return this.executeWithFallback(
+      () => this.redisCache!.deletePattern(pattern),
+      () =>
+        this.serverCache.deletePattern
+          ? this.serverCache.deletePattern(pattern)
+          : Promise.resolve(),
+      `deletePattern(${pattern})`,
+    );
+  }
+
   async clear(): Promise<void> {
     return this.executeWithFallback(
       async () => {

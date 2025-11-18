@@ -3,6 +3,7 @@ import { MCPCard } from "@/components/mcp-card";
 import { canCreateMCP } from "lib/auth/client-permissions";
 
 import { Button } from "@/components/ui/button";
+import { SplitButton } from "@/components/ui/split-button";
 import Link from "next/link";
 import { MCPOverview, RECOMMENDED_MCPS } from "@/components/mcp-overview";
 
@@ -15,7 +16,7 @@ import { useMcpList } from "@/hooks/queries/use-mcp-list";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { cn } from "lib/utils";
 import {
   DropdownMenu,
@@ -38,6 +39,39 @@ interface MCPDashboardProps {
 export default function MCPDashboard({ message, user }: MCPDashboardProps) {
   const t = useTranslations("MCP");
   const router = useRouter();
+
+  const handleExportAll = async () => {
+    try {
+      const response = await fetch("/api/mcp/export");
+
+      if (!response.ok) {
+        throw new Error("Export failed");
+      }
+
+      const data = await response.json();
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `mcp-config-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(t("MCP.exportSuccess"));
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error(t("MCP.exportError"));
+    }
+  };
+
+  const handleAddServer = () => {
+    router.push("/mcp/create");
+  };
 
   // Check if user can create MCP connections using Better Auth permissions
   const canCreate = canCreateMCP(user?.role);
@@ -190,16 +224,24 @@ export default function MCPDashboard({ message, user }: MCPDashboardProps) {
                 </Link>
               )}
               {canCreate && (
-                <Link href="/mcp/create">
-                  <Button
-                    className="font-semibold bg-input/20"
-                    variant="outline"
-                    data-testid="add-mcp-server-button"
-                  >
-                    <MCPIcon className="fill-foreground size-3.5" />
-                    {t("addMcpServer")}
-                  </Button>
-                </Link>
+                <SplitButton
+                  onClick={handleAddServer}
+                  variant="outline"
+                  className="font-semibold bg-input/20"
+                  icon={<MCPIcon className="fill-foreground size-3.5" />}
+                  data-testid="add-mcp-server-button"
+                  dropdownContent={
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={handleExportAll}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      {t("exportAll")}
+                    </DropdownMenuItem>
+                  }
+                >
+                  {t("addMcpServer")}
+                </SplitButton>
               )}
             </div>
           </div>

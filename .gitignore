@@ -20,6 +20,9 @@ playwright-report/
 # next.js
 /.next/
 /out/
+.cache/
+node-compile-cache/
+tsx-*/
 
 # production
 /build
@@ -60,3 +63,11 @@ local-data
 openai-compatible.config.ts
 certificates
 public/uploads
+
+# Temporary data files
+markdown-*.json
+neo4j-*.json
+screenshot.jpg
+
+# Session documentation and logs
+.docs/

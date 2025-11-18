@@ -1,16 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createFileBasedMCPConfigsStorage } from "./fb-mcp-config-storage";
 import type { MCPClientsManager } from "./create-mcp-clients-manager";
 import type { MCPServerConfig } from "app-types/mcp";
-import { mkdir, readFile, writeFile } from "fs/promises";
 import chokidar from "chokidar";
 
-// Mock dependencies
-vi.mock("fs/promises", () => ({
+const fsMock = {
   mkdir: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
-}));
+};
+
+const mockMkdir = fsMock.mkdir;
+const mockReadFile = fsMock.readFile;
+const mockWriteFile = fsMock.writeFile;
+
+const { createFileBasedMCPConfigsStorage } = await import(
+  "./fb-mcp-config-storage"
+);
 
 vi.mock("chokidar", () => ({
   default: {
@@ -36,9 +41,6 @@ vi.mock("lib/ai/mcp/config-path", () => ({
   MCP_CONFIG_PATH: "/test/config.json",
 }));
 
-const mockReadFile = vi.mocked(readFile);
-const mockWriteFile = vi.mocked(writeFile);
-const mockMkdir = vi.mocked(mkdir);
 const mockChokidar = vi.mocked(chokidar);
 
 describe("File-based MCP Config Storage", () => {
@@ -62,7 +64,7 @@ describe("File-based MCP Config Storage", () => {
 
     mockChokidar.watch.mockReturnValue(mockWatcher);
 
-    storage = createFileBasedMCPConfigsStorage("/test/config.json");
+    storage = createFileBasedMCPConfigsStorage("/test/config.json", fsMock);
 
     mockManager = {
       getClients: vi.fn(),
