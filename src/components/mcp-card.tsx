@@ -2,6 +2,8 @@
 import {
   Check,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Copy,
   ShieldAlertIcon,
   Loader,
@@ -59,6 +61,7 @@ export const MCPCard = memo(function MCPCard({
 }: MCPServerInfo & { user: BasicUser }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [visibilityChangeLoading, setVisibilityChangeLoading] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const t = useTranslations("MCP");
   const appStoreMutate = appStore((state) => state.mutate);
   const { mutate } = useSWRConfig();
@@ -173,6 +176,28 @@ export const MCPCard = memo(function MCPCard({
         <h4 className="font-bold text-xs sm:text-lg flex items-center gap-1">
           {name}
         </h4>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              disabled={isDisabled}
+              data-testid="collapse-toggle"
+            >
+              {isCollapsed ? (
+                <ChevronDown className="size-4" data-icon="chevron-down" />
+              ) : (
+                <ChevronUp className="size-4" data-icon="chevron-up" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isCollapsed ? t("expand") : t("collapse")}</p>
+          </TooltipContent>
+        </Tooltip>
 
         <div className="flex-1" />
 
@@ -330,47 +355,49 @@ export const MCPCard = memo(function MCPCard({
         </div>
       )}
 
-      <div className="relative hidden sm:flex w-full">
-        <CardContent className="flex min-w-0 w-full flex-row text-sm max-h-[320px] overflow-hidden border-r-0">
-          {/* Only show config to owners to prevent credential exposure */}
-          {isOwner && config && (
-            <div className="w-1/2 min-w-0 flex flex-col pr-2 border-r border-border">
-              <div className="flex items-center gap-2 mb-2 pt-2 pb-1 z-10">
-                <Settings size={14} className="text-muted-foreground" />
+      {!isCollapsed && (
+        <div className="relative hidden sm:flex w-full">
+          <CardContent className="flex min-w-0 w-full flex-row text-sm max-h-[320px] overflow-hidden border-r-0">
+            {/* Only show config to owners to prevent credential exposure */}
+            {isOwner && config && (
+              <div className="w-1/2 min-w-0 flex flex-col pr-2 border-r border-border">
+                <div className="flex items-center gap-2 mb-2 pt-2 pb-1 z-10">
+                  <Settings size={14} className="text-muted-foreground" />
+                  <h5 className="text-muted-foreground text-sm font-medium">
+                    {t("configuration")}
+                  </h5>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <JsonView data={config} />
+                </div>
+              </div>
+            )}
+
+            <div
+              className={`${isOwner && config ? "w-1/2" : "w-full"} min-w-0 flex flex-col ${isOwner && config ? "pl-4" : ""}`}
+            >
+              <div className="flex items-center gap-2 mb-4 pt-2 pb-1 z-10">
+                <Wrench size={14} className="text-muted-foreground" />
                 <h5 className="text-muted-foreground text-sm font-medium">
-                  {t("configuration")}
+                  {t("availableTools")}
                 </h5>
               </div>
+
               <div className="flex-1 overflow-y-auto">
-                <JsonView data={config} />
+                {toolInfo.length > 0 ? (
+                  <ToolsList tools={toolInfo} serverId={id} />
+                ) : (
+                  <div className="bg-secondary/30 rounded-md p-3 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {t("noToolsAvailable")}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-
-          <div
-            className={`${isOwner && config ? "w-1/2" : "w-full"} min-w-0 flex flex-col ${isOwner && config ? "pl-4" : ""}`}
-          >
-            <div className="flex items-center gap-2 mb-4 pt-2 pb-1 z-10">
-              <Wrench size={14} className="text-muted-foreground" />
-              <h5 className="text-muted-foreground text-sm font-medium">
-                {t("availableTools")}
-              </h5>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              {toolInfo.length > 0 ? (
-                <ToolsList tools={toolInfo} serverId={id} />
-              ) : (
-                <div className="bg-secondary/30 rounded-md p-3 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    {t("noToolsAvailable")}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </div>
+          </CardContent>
+        </div>
+      )}
     </Card>
   );
 });

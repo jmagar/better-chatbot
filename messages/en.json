@@ -758,6 +758,8 @@
     "refresh": "Refresh",
     "delete": "Delete",
     "edit": "Edit",
+    "expand": "Expand details",
+    "collapse": "Collapse details",
     "configuration": "Configuration",
     "availableTools": "Available Tools",
     "noToolsAvailable": "No tools available",
