@@ -124,4 +124,48 @@ describe("MCPCard Collapse", () => {
     const chevronUp = container.querySelector('[data-icon="chevron-up"]');
     expect(chevronUp).toBeInTheDocument();
   });
+
+  it("shows expanded content on mobile viewports", () => {
+    const { container } = render(<MCPCard {...baseMcpProps} />);
+    const toggleButton = container.querySelector(
+      '[data-testid="collapse-toggle"]',
+    ) as HTMLElement;
+
+    // Expand the card
+    fireEvent.click(toggleButton);
+
+    // Verify the wrapper div doesn't have 'hidden' class
+    const contentWrapper = container.querySelector(".relative.flex.w-full");
+    expect(contentWrapper).toBeInTheDocument();
+    expect(contentWrapper?.classList.contains("hidden")).toBe(false);
+
+    // Verify CardContent has flex-col for mobile stacking
+    const cardContent = contentWrapper?.querySelector(".flex-col");
+    expect(cardContent).toBeInTheDocument();
+
+    // Verify configuration and tools sections are visible
+    expect(screen.getByText("configuration")).toBeInTheDocument();
+    expect(screen.getByText("availableTools")).toBeInTheDocument();
+  });
+
+  it("displays configuration section with mobile-responsive classes", () => {
+    const { container } = render(<MCPCard {...baseMcpProps} />);
+    const toggleButton = container.querySelector(
+      '[data-testid="collapse-toggle"]',
+    ) as HTMLElement;
+
+    fireEvent.click(toggleButton);
+
+    // Find the configuration section wrapper (parent of the h5)
+    const configHeading = screen.getByText("configuration");
+    const configWrapper = configHeading.closest(
+      ".flex.flex-col",
+    ) as HTMLElement;
+    expect(configWrapper).toBeInTheDocument();
+
+    // Verify it has responsive width classes (w-full on mobile, sm:w-1/2 on larger screens)
+    const classString = configWrapper.className;
+    expect(classString).toContain("w-full");
+    expect(classString).toContain("sm:w-1/2");
+  });
 });

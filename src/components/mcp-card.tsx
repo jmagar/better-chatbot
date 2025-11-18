@@ -356,11 +356,11 @@ export const MCPCard = memo(function MCPCard({
       )}
 
       {!isCollapsed && (
-        <div className="relative hidden sm:flex w-full">
-          <CardContent className="flex min-w-0 w-full flex-row text-sm max-h-[320px] overflow-hidden border-r-0">
+        <div className="relative flex w-full">
+          <CardContent className="flex min-w-0 w-full flex-col sm:flex-row text-sm max-h-[320px] overflow-hidden border-r-0">
             {/* Only show config to owners to prevent credential exposure */}
             {isOwner && config && (
-              <div className="w-1/2 min-w-0 flex flex-col pr-2 border-r border-border">
+              <div className="w-full sm:w-1/2 min-w-0 flex flex-col pr-2 border-r-0 sm:border-r border-border mb-4 sm:mb-0">
                 <div className="flex items-center gap-2 mb-2 pt-2 pb-1 z-10">
                   <Settings size={14} className="text-muted-foreground" />
                   <h5 className="text-muted-foreground text-sm font-medium">
@@ -374,7 +374,7 @@ export const MCPCard = memo(function MCPCard({
             )}
 
             <div
-              className={`${isOwner && config ? "w-1/2" : "w-full"} min-w-0 flex flex-col ${isOwner && config ? "pl-4" : ""}`}
+              className={`${isOwner && config ? "w-full sm:w-1/2" : "w-full"} min-w-0 flex flex-col ${isOwner && config ? "pl-0 sm:pl-4" : ""}`}
             >
               <div className="flex items-center gap-2 mb-4 pt-2 pb-1 z-10">
                 <Wrench size={14} className="text-muted-foreground" />
