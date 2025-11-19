@@ -70,9 +70,12 @@ export class GatewayService {
 
     // Circuit breaker for resource calls
     this.resourceCallBreaker = new CircuitBreaker(
-      async (_serverId: string, _uri: string) => {
-        // TODO: Implement resource call through MCP manager
-        throw new Error("Resource calls not yet implemented in MCP manager");
+      async (serverId: string, uri: string) => {
+        const client = await this.mcpManager.getClient(serverId);
+        if (!client) {
+          throw new Error(`Client ${serverId} not found`);
+        }
+        return await client.client.readResource(uri);
       },
       {
         timeout: 15000, // 15 seconds for resources
@@ -90,9 +93,12 @@ export class GatewayService {
 
     // Circuit breaker for prompt calls
     this.promptCallBreaker = new CircuitBreaker(
-      async (_serverId: string, _promptName: string, _args: unknown) => {
-        // TODO: Implement prompt call through MCP manager
-        throw new Error("Prompt calls not yet implemented in MCP manager");
+      async (serverId: string, promptName: string, args: unknown) => {
+        const client = await this.mcpManager.getClient(serverId);
+        if (!client) {
+          throw new Error(`Client ${serverId} not found`);
+        }
+        return await client.client.getPrompt(promptName, args as Record<string, unknown>);
       },
       {
         timeout: 10000, // 10 seconds for prompts
@@ -173,6 +179,7 @@ export class GatewayService {
   }
 
   async getPresetResources(config: GatewayPresetConfig): Promise<any[]> {
+    const startTime = Date.now();
     this.logger.debug("Getting preset resources", { presetId: config.id });
 
     try {
@@ -185,10 +192,50 @@ export class GatewayService {
         return [];
       }
 
-      // TODO: Implement resource listing through MCP manager
-      // For now, return empty array as placeholder
-      this.logger.info("Resource listing not yet implemented");
-      return [];
+      const allResources: any[] = [];
+
+      for (const serverConfig of config.servers) {
+        // Skip disabled servers
+        if (!serverConfig.enabled) continue;
+
+        try {
+          const client = await this.mcpManager.getClient(serverConfig.mcpServerId);
+          if (!client) {
+            this.logger.warn("Client not found", { serverId: serverConfig.mcpServerId });
+            continue;
+          }
+
+          const resources = await withTimeout(
+            client.client.listResources(),
+            5000,
+            "Timeout listing resources",
+          );
+
+          // Add server context to each resource
+          for (const resource of resources) {
+            allResources.push({
+              ...resource,
+              _mcpServerId: serverConfig.mcpServerId,
+              _mcpServerName: client.client.getInfo().name,
+            });
+          }
+        } catch (error) {
+          this.logger.error("Failed to list resources from server", {
+            serverId: serverConfig.mcpServerId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          // Continue with other servers
+        }
+      }
+
+      const duration = Date.now() - startTime;
+      this.logger.info("Loaded preset resources", {
+        presetId: config.id,
+        resourceCount: allResources.length,
+        duration: `${duration}ms`,
+      });
+
+      return allResources;
     } catch (error) {
       this.logger.error("Failed to get preset resources", {
         presetId: config.id,
@@ -223,6 +270,7 @@ export class GatewayService {
   }
 
   async getPresetPrompts(config: GatewayPresetConfig): Promise<any[]> {
+    const startTime = Date.now();
     this.logger.debug("Getting preset prompts", { presetId: config.id });
 
     try {
@@ -235,10 +283,50 @@ export class GatewayService {
         return [];
       }
 
-      // TODO: Implement prompt listing through MCP manager
-      // For now, return empty array as placeholder
-      this.logger.info("Prompt listing not yet implemented");
-      return [];
+      const allPrompts: any[] = [];
+
+      for (const serverConfig of config.servers) {
+        // Skip disabled servers
+        if (!serverConfig.enabled) continue;
+
+        try {
+          const client = await this.mcpManager.getClient(serverConfig.mcpServerId);
+          if (!client) {
+            this.logger.warn("Client not found", { serverId: serverConfig.mcpServerId });
+            continue;
+          }
+
+          const prompts = await withTimeout(
+            client.client.listPrompts(),
+            5000,
+            "Timeout listing prompts",
+          );
+
+          // Add server context to each prompt
+          for (const prompt of prompts) {
+            allPrompts.push({
+              ...prompt,
+              _mcpServerId: serverConfig.mcpServerId,
+              _mcpServerName: client.client.getInfo().name,
+            });
+          }
+        } catch (error) {
+          this.logger.error("Failed to list prompts from server", {
+            serverId: serverConfig.mcpServerId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          // Continue with other servers
+        }
+      }
+
+      const duration = Date.now() - startTime;
+      this.logger.info("Loaded preset prompts", {
+        presetId: config.id,
+        promptCount: allPrompts.length,
+        duration: `${duration}ms`,
+      });
+
+      return allPrompts;
     } catch (error) {
       this.logger.error("Failed to get preset prompts", {
         presetId: config.id,

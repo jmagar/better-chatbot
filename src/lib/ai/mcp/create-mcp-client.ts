@@ -352,6 +352,91 @@ export class MCPClient {
     }
   }
 
+  /**
+   * List available resources from the connected MCP server
+   */
+  async listResources(options?: { cursor?: string }): Promise<any[]> {
+    if (this.status !== "connected" || !this.client) {
+      return [];
+    }
+    try {
+      this.logger.info("Listing resources");
+      const response = await this.client.listResources(options);
+      return response.resources || [];
+    } catch (error) {
+      this.logger.error("Failed to list resources", error);
+      return [];
+    }
+  }
+
+  /**
+   * Read content of a specific resource by URI
+   */
+  async readResource(uri: string): Promise<any | null> {
+    if (this.status !== "connected" || !this.client) {
+      return null;
+    }
+    try {
+      this.logger.info("Reading resource", uri);
+      const response = await this.client.readResource({ uri });
+      return response.contents?.[0] || null;
+    } catch (error) {
+      this.logger.error("Failed to read resource", uri, error);
+      return null;
+    }
+  }
+
+  /**
+   * List available resource templates from the connected MCP server
+   */
+  async listResourceTemplates(): Promise<any[]> {
+    if (this.status !== "connected" || !this.client) {
+      return [];
+    }
+    try {
+      this.logger.info("Listing resource templates");
+      const response = await this.client.listResourceTemplates();
+      return response.resourceTemplates || [];
+    } catch (error) {
+      this.logger.error("Failed to list resource templates", error);
+      return [];
+    }
+  }
+
+  /**
+   * List available prompts from the connected MCP server
+   */
+  async listPrompts(options?: { cursor?: string }): Promise<any[]> {
+    if (this.status !== "connected" || !this.client) {
+      return [];
+    }
+    try {
+      this.logger.info("Listing prompts");
+      const response = await this.client.listPrompts(options);
+      return response.prompts || [];
+    } catch (error) {
+      this.logger.error("Failed to list prompts", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get a specific prompt with optional arguments
+   */
+  async getPrompt(name: string, args?: Record<string, unknown>): Promise<any | null> {
+    if (this.status !== "connected" || !this.client) {
+      return null;
+    }
+    try {
+      this.logger.info("Getting prompt", name);
+      const response = await this.client.getPrompt({ name, arguments: args });
+      return response || null;
+    } catch (error) {
+      this.logger.error("Failed to get prompt", name, error);
+      return null;
+    }
+  }
+
   async callTool(toolName: string, input?: unknown) {
     const id = generateUUID();
     this.inProgressToolCallIds.push(id);
