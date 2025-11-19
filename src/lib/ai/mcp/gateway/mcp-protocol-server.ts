@@ -15,6 +15,8 @@ import {
   createPromptsListHandler,
   createPromptsGetHandler,
 } from "./handlers/prompts-handler";
+import { createSamplingCreateMessageHandler } from "./handlers/sampling-handler";
+import { createElicitationCreateHandler } from "./handlers/elicitation-handler";
 
 /**
  * MCP Protocol Server for a specific preset or all capabilities
@@ -39,6 +41,7 @@ export class MCPProtocolServer {
           tools: {},
           resources: {},
           prompts: {},
+          sampling: {},
         },
       },
     );
@@ -96,10 +99,35 @@ export class MCPProtocolServer {
         { method: "prompts/list" },
         promptsListHandler,
       );
-      this.server.setRequestHandler({ method: "prompts/get" }, promptsGetHandler);
+      this.server.setRequestHandler(
+        { method: "prompts/get" },
+        promptsGetHandler,
+      );
+
+      // Register sampling handler
+      const samplingCreateMessageHandler = createSamplingCreateMessageHandler(
+        this.gatewayService,
+        this.logger,
+      );
+
+      this.server.setRequestHandler(
+        { method: "sampling/createMessage" },
+        samplingCreateMessageHandler,
+      );
+
+      // Register elicitation handler
+      const elicitationCreateHandler = createElicitationCreateHandler(
+        this.gatewayService,
+        this.logger,
+      );
+
+      this.server.setRequestHandler(
+        { method: "elicitation/create" },
+        elicitationCreateHandler,
+      );
 
       this.logger.info(
-        `MCP server initialized with ${Object.keys(tools).length} tools, resources, and prompts`,
+        `MCP server initialized with ${Object.keys(tools).length} tools, resources, prompts, sampling, and elicitation`,
       );
     } catch (error) {
       this.logger.error("Failed to initialize MCP server", error);

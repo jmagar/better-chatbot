@@ -166,10 +166,7 @@ export async function POST(
 
     // Handle the request
     const requestBody = await request.json();
-    const response = await transport.handleRequest(
-      request as any,
-      requestBody,
-    );
+    const response = await transport.handleRequest(request as any, requestBody);
 
     return response;
   } catch (error: any) {
@@ -251,7 +248,7 @@ export async function GET(
  * Handle DELETE requests for session termination
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ segments?: string[] }> },
 ) {
   try {

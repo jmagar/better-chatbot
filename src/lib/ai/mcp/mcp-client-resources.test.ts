@@ -42,7 +42,7 @@ describe("MCPClient - Resources Support", () => {
 
       // @ts-expect-error - mock private property
       client["client"] = mockClient;
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["isConnected"] = true;
 
       const resources = await client.listResources();
@@ -74,25 +74,29 @@ describe("MCPClient - Resources Support", () => {
         }),
       };
 
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["client"] = mockClient;
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["isConnected"] = true;
 
       const result = await client.listResources({ cursor: "page1" });
 
       expect(result).toHaveLength(1);
-      expect(mockClient.listResources).toHaveBeenCalledWith({ cursor: "page1" });
+      expect(mockClient.listResources).toHaveBeenCalledWith({
+        cursor: "page1",
+      });
     });
 
     it("should handle errors gracefully", async () => {
       const mockClient = {
-        listResources: vi.fn().mockRejectedValue(new Error("Connection failed")),
+        listResources: vi
+          .fn()
+          .mockRejectedValue(new Error("Connection failed")),
       };
 
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["client"] = mockClient;
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["isConnected"] = true;
 
       const resources = await client.listResources();
@@ -114,9 +118,9 @@ describe("MCPClient - Resources Support", () => {
         }),
       };
 
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["client"] = mockClient;
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["isConnected"] = true;
 
       const content = await client.readResource("file:///project/README.md");
@@ -142,9 +146,9 @@ describe("MCPClient - Resources Support", () => {
         }),
       };
 
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["client"] = mockClient;
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["isConnected"] = true;
 
       const content = await client.readResource("file:///project/image.png");
@@ -161,12 +165,14 @@ describe("MCPClient - Resources Support", () => {
 
     it("should handle resource not found", async () => {
       const mockClient = {
-        readResource: vi.fn().mockRejectedValue(new Error("Resource not found")),
+        readResource: vi
+          .fn()
+          .mockRejectedValue(new Error("Resource not found")),
       };
 
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["client"] = mockClient;
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["isConnected"] = true;
 
       const content = await client.readResource("file:///nonexistent.txt");
@@ -189,9 +195,9 @@ describe("MCPClient - Resources Support", () => {
         }),
       };
 
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["client"] = mockClient;
-      // @ts-expect-error
+      // @ts-expect-error - Testing with intentionally invalid parameters
       client["isConnected"] = true;
 
       const templates = await client.listResourceTemplates();

@@ -19,3 +19,7 @@ export {
   createPromptsListHandler,
   createPromptsGetHandler,
 } from "./prompts-handler";
+
+export { createSamplingCreateMessageHandler } from "./sampling-handler";
+
+export { createElicitationCreateHandler } from "./elicitation-handler";
