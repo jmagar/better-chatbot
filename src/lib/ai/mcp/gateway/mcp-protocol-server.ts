@@ -9,7 +9,7 @@ import globalLogger from "@/lib/logger";
  */
 function convertToMCPTool(toolId: string, tool: VercelAIMcpTool) {
   // Extract input schema from Zod schema
-  let inputSchema: any = {
+  const inputSchema: any = {
     type: "object",
     properties: {},
     required: [],
@@ -90,7 +90,7 @@ export class MCPProtocolServer {
 
       // Register each tool with the MCP server
       for (const [toolId, tool] of Object.entries(tools)) {
-        const mcpTool = convertToMCPTool(toolId, tool);
+        const _mcpTool = convertToMCPTool(toolId, tool);
 
         this.server.setRequestHandler(
           {
@@ -157,7 +157,9 @@ export class MCPProtocolServer {
         );
       }
 
-      this.logger.info(`MCP server initialized with ${Object.keys(tools).length} tools`);
+      this.logger.info(
+        `MCP server initialized with ${Object.keys(tools).length} tools`,
+      );
     } catch (error) {
       this.logger.error("Failed to initialize MCP server", error);
       throw error;
