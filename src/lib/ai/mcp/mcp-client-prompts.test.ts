@@ -54,9 +54,9 @@ describe("MCPClient - Prompts Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const prompts = await client.listPrompts();
@@ -89,9 +89,9 @@ describe("MCPClient - Prompts Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const result = await client.listPrompts({ cursor: "page1" });
@@ -105,9 +105,9 @@ describe("MCPClient - Prompts Support", () => {
         listPrompts: vi.fn().mockRejectedValue(new Error("Connection failed")),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const prompts = await client.listPrompts();
@@ -132,9 +132,9 @@ describe("MCPClient - Prompts Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const prompt = await client.getPrompt("code_review", {
@@ -171,9 +171,9 @@ describe("MCPClient - Prompts Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const prompt = await client.getPrompt("greeting");
@@ -207,9 +207,9 @@ describe("MCPClient - Prompts Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const prompt = await client.getPrompt("conversation");
@@ -238,9 +238,9 @@ describe("MCPClient - Prompts Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const prompt = await client.getPrompt("doc_analysis");
@@ -259,9 +259,9 @@ describe("MCPClient - Prompts Support", () => {
         getPrompt: vi.fn().mockRejectedValue(new Error("Prompt not found")),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const prompt = await client.getPrompt("nonexistent");

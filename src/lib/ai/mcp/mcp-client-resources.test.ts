@@ -40,9 +40,9 @@ describe("MCPClient - Resources Support", () => {
         }),
       };
 
-      // @ts-ignore - mock private property
+      // @ts-expect-error - mock private property
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const resources = await client.listResources();
@@ -74,9 +74,9 @@ describe("MCPClient - Resources Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const result = await client.listResources({ cursor: "page1" });
@@ -90,9 +90,9 @@ describe("MCPClient - Resources Support", () => {
         listResources: vi.fn().mockRejectedValue(new Error("Connection failed")),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const resources = await client.listResources();
@@ -114,9 +114,9 @@ describe("MCPClient - Resources Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const content = await client.readResource("file:///project/README.md");
@@ -142,9 +142,9 @@ describe("MCPClient - Resources Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const content = await client.readResource("file:///project/image.png");
@@ -164,9 +164,9 @@ describe("MCPClient - Resources Support", () => {
         readResource: vi.fn().mockRejectedValue(new Error("Resource not found")),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const content = await client.readResource("file:///nonexistent.txt");
@@ -189,9 +189,9 @@ describe("MCPClient - Resources Support", () => {
         }),
       };
 
-      // @ts-ignore
+      // @ts-expect-error
       client["client"] = mockClient;
-      // @ts-ignore
+      // @ts-expect-error
       client["isConnected"] = true;
 
       const templates = await client.listResourceTemplates();
