@@ -44,7 +44,7 @@ export function createPromptsListHandler(
  * Creates a prompts/get handler for MCP protocol
  */
 export function createPromptsGetHandler(gatewayService: GatewayService) {
-  return async (request: any) => {
+  return async (request: { params?: { name?: string; arguments?: Record<string, unknown> } }) => {
     const promptName = request.params?.name;
     const args = request.params?.arguments || {};
 
@@ -82,20 +82,20 @@ export function createPromptsGetHandler(gatewayService: GatewayService) {
       });
 
       return result;
-    } catch (error: any) {
+    } catch (error) {
       logger.error("Failed to get prompt", {
         promptName,
         error: error instanceof Error ? error.message : String(error),
       });
 
       return {
-        description: `Error: ${error.message || "Unknown error"}`,
+        description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
         messages: [
           {
             role: "user",
             content: {
               type: "text",
-              text: `Error retrieving prompt: ${error.message || "Unknown error"}`,
+              text: `Error retrieving prompt: ${error instanceof Error ? error.message : "Unknown error"}`,
             },
           },
         ],

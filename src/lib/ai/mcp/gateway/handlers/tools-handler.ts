@@ -4,11 +4,22 @@ import globalLogger from "@/lib/logger";
 
 const logger = globalLogger.withTag("ToolsHandler");
 
+interface JSONSchemaProperty {
+  type: string;
+  description: string;
+}
+
+interface JSONSchema {
+  type: string;
+  properties: Record<string, JSONSchemaProperty>;
+  required: string[];
+}
+
 /**
  * Converts a VercelAI MCP Tool to MCP protocol tool format
  */
 export function convertToMCPTool(toolId: string, tool: VercelAIMcpTool) {
-  const inputSchema: any = {
+  const inputSchema: JSONSchema = {
     type: "object",
     properties: {},
     required: [],
@@ -17,6 +28,7 @@ export function convertToMCPTool(toolId: string, tool: VercelAIMcpTool) {
   if (tool.parameters) {
     try {
       // Try to extract schema from Zod
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const zodDef = (tool.parameters as any)?._def;
       if (zodDef?.shape) {
         const shape = zodDef.shape();
@@ -29,7 +41,7 @@ export function convertToMCPTool(toolId: string, tool: VercelAIMcpTool) {
             };
             return acc;
           },
-          {} as Record<string, any>,
+          {} as Record<string, JSONSchemaProperty>,
         );
         inputSchema.required = Object.keys(shape).filter(
           (key) => !shape[key].isOptional(),
@@ -81,9 +93,8 @@ export function createToolsListHandler(tools: Record<string, VercelAIMcpTool>) {
 export function createToolsCallHandler(
   tools: Record<string, VercelAIMcpTool>,
   gatewayService: GatewayService,
-  transformResult: (result: any) => any,
 ) {
-  return async (request: any) => {
+  return async (request: { params?: { name?: string; arguments?: Record<string, unknown> } }) => {
     const toolName = request.params?.name;
     const args = request.params?.arguments || {};
 
@@ -125,8 +136,8 @@ export function createToolsCallHandler(
       });
 
       // Transform result to MCP format
-      return transformResult(result);
-    } catch (error: any) {
+      return transformToolResult(result);
+    } catch (error) {
       logger.error("Tool execution failed", {
         toolName,
         serverId: targetTool._mcpServerId,
@@ -137,11 +148,47 @@ export function createToolsCallHandler(
         content: [
           {
             type: "text",
-            text: `Error: ${error.message || "Unknown error"}`,
+            text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
           },
         ],
         isError: true,
       };
     }
+  };
+}
+
+/**
+ * Transform tool execution result to MCP protocol format
+ */
+function transformToolResult(result: unknown): {
+  content: Array<{ type: string; text: string }>;
+  isError?: boolean;
+} {
+  if (!result) {
+    return {
+      content: [{ type: "text", text: "Success" }],
+    };
+  }
+
+  // If result already has MCP format
+  if (
+    typeof result === "object" &&
+    result !== null &&
+    "content" in result &&
+    Array.isArray(result.content)
+  ) {
+    return result as { content: Array<{ type: string; text: string }> };
+  }
+
+  // If result is a string
+  if (typeof result === "string") {
+    return {
+      content: [{ type: "text", text: result }],
+    };
+  }
+
+  // If result is an object
+  return {
+    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
   };
 }

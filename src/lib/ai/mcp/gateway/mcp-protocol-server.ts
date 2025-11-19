@@ -3,55 +3,22 @@ import type { VercelAIMcpTool } from "@/types/mcp";
 import { GatewayService } from "./gateway-service";
 import type { GatewayPresetConfig } from "./types";
 import globalLogger from "@/lib/logger";
+import {
+  createToolsListHandler,
+  createToolsCallHandler,
+} from "./handlers/tools-handler";
+import {
+  createResourcesListHandler,
+  createResourcesReadHandler,
+} from "./handlers/resources-handler";
+import {
+  createPromptsListHandler,
+  createPromptsGetHandler,
+} from "./handlers/prompts-handler";
 
 /**
- * Converts a VercelAI MCP Tool to MCP protocol tool format
- */
-function convertToMCPTool(toolId: string, tool: VercelAIMcpTool) {
-  // Extract input schema from Zod schema
-  const inputSchema: any = {
-    type: "object",
-    properties: {},
-    required: [],
-  };
-
-  if (tool.parameters) {
-    try {
-      // Try to extract schema from Zod
-      const zodDef = (tool.parameters as any)?._def;
-      if (zodDef?.shape) {
-        const shape = zodDef.shape();
-        inputSchema.properties = Object.keys(shape).reduce(
-          (acc, key) => {
-            const field = shape[key];
-            acc[key] = {
-              type: field._def?.typeName?.toLowerCase() || "string",
-              description: field._def?.description || "",
-            };
-            return acc;
-          },
-          {} as Record<string, any>,
-        );
-        inputSchema.required = Object.keys(shape).filter(
-          (key) => !shape[key].isOptional(),
-        );
-      }
-    } catch (e) {
-      // Fallback to empty schema
-      globalLogger.warn(`Failed to extract schema for tool ${toolId}:`, e);
-    }
-  }
-
-  return {
-    name: toolId,
-    description: tool.description || `Tool from ${tool._mcpServerName}`,
-    inputSchema,
-  };
-}
-
-/**
- * MCP Protocol Server for a specific preset or all tools
- * Wraps the GatewayService and exposes tools via MCP protocol
+ * MCP Protocol Server for a specific preset or all capabilities
+ * Wraps the GatewayService and exposes tools, resources, and prompts via MCP protocol
  */
 export class MCPProtocolServer {
   private server: Server;
@@ -59,7 +26,7 @@ export class MCPProtocolServer {
 
   constructor(
     private gatewayService: GatewayService,
-    private presetConfig: GatewayPresetConfig | null, // null = all tools
+    private presetConfig: GatewayPresetConfig | null, // null = all capabilities
     private serverName: string,
   ) {
     this.server = new Server(
@@ -70,6 +37,8 @@ export class MCPProtocolServer {
       {
         capabilities: {
           tools: {},
+          resources: {},
+          prompts: {},
         },
       },
     );
@@ -78,7 +47,7 @@ export class MCPProtocolServer {
   }
 
   /**
-   * Initialize the server by registering all tools
+   * Initialize the server by registering all handlers
    */
   async initialize(): Promise<void> {
     try {
@@ -88,105 +57,54 @@ export class MCPProtocolServer {
 
       this.logger.info(`Registering ${Object.keys(tools).length} tools`);
 
-      // Register tools/list handler once
-      this.server.setRequestHandler(
-        {
-          method: "tools/list",
-        } as any,
-        async () => {
-          return {
-            tools: Object.entries(tools).map(([id, t]) =>
-              convertToMCPTool(id, t),
-            ),
-          };
-        },
+      // Register tools handlers
+      const toolsListHandler = createToolsListHandler(tools);
+      const toolsCallHandler = createToolsCallHandler(
+        tools,
+        this.gatewayService,
       );
 
-      // Register tools/call handler once
-      this.server.setRequestHandler(
-        {
-          method: "tools/call",
-        } as any,
-        async (request: any) => {
-          const toolName = request.params?.name;
-          const args = request.params?.arguments || {};
+      this.server.setRequestHandler({ method: "tools/list" }, toolsListHandler);
+      this.server.setRequestHandler({ method: "tools/call" }, toolsCallHandler);
 
-          if (!toolName) {
-            return {
-              content: [{ type: "text", text: "Error: Tool name is required" }],
-              isError: true,
-            };
-          }
-
-          const targetTool = tools[toolName];
-          if (!targetTool) {
-            return {
-              content: [
-                { type: "text", text: `Error: Tool not found: ${toolName}` },
-              ],
-              isError: true,
-            };
-          }
-
-          try {
-            const result = await this.gatewayService.executeToolCall(
-              targetTool._mcpServerId,
-              targetTool._originToolName,
-              args,
-            );
-
-            // Transform result to MCP format
-            return this.transformResult(result);
-          } catch (error: any) {
-            this.logger.error(`Tool call failed: ${toolName}`, error);
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Error: ${error.message || "Unknown error"}`,
-                },
-              ],
-              isError: true,
-            };
-          }
-        },
+      // Register resources handlers
+      const resourcesListHandler = createResourcesListHandler(
+        this.gatewayService,
+        this.presetConfig,
       );
+      const resourcesReadHandler = createResourcesReadHandler(
+        this.gatewayService,
+      );
+
+      this.server.setRequestHandler(
+        { method: "resources/list" },
+        resourcesListHandler,
+      );
+      this.server.setRequestHandler(
+        { method: "resources/read" },
+        resourcesReadHandler,
+      );
+
+      // Register prompts handlers
+      const promptsListHandler = createPromptsListHandler(
+        this.gatewayService,
+        this.presetConfig,
+      );
+      const promptsGetHandler = createPromptsGetHandler(this.gatewayService);
+
+      this.server.setRequestHandler(
+        { method: "prompts/list" },
+        promptsListHandler,
+      );
+      this.server.setRequestHandler({ method: "prompts/get" }, promptsGetHandler);
 
       this.logger.info(
-        `MCP server initialized with ${Object.keys(tools).length} tools`,
+        `MCP server initialized with ${Object.keys(tools).length} tools, resources, and prompts`,
       );
     } catch (error) {
       this.logger.error("Failed to initialize MCP server", error);
       throw error;
     }
-  }
-
-  /**
-   * Transform tool execution result to MCP protocol format
-   */
-  private transformResult(result: any): any {
-    if (!result) {
-      return {
-        content: [{ type: "text", text: "Success" }],
-      };
-    }
-
-    // If result already has MCP format
-    if (result.content && Array.isArray(result.content)) {
-      return result;
-    }
-
-    // If result is a string
-    if (typeof result === "string") {
-      return {
-        content: [{ type: "text", text: result }],
-      };
-    }
-
-    // If result is an object
-    return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-    };
   }
 
   /**
@@ -204,11 +122,21 @@ export class MCPProtocolServer {
     serverName: string;
     version: string;
     totalTools: number;
+    totalResources: number;
+    totalPrompts: number;
     exposedServerCount: number;
   }> {
     const tools = this.presetConfig
       ? await this.gatewayService.getPresetTools(this.presetConfig)
       : {};
+
+    const resources = this.presetConfig
+      ? await this.gatewayService.getPresetResources(this.presetConfig)
+      : [];
+
+    const prompts = this.presetConfig
+      ? await this.gatewayService.getPresetPrompts(this.presetConfig)
+      : [];
 
     const serverIds = new Set(
       Object.values(tools).map((tool) => tool._mcpServerId),
@@ -219,6 +147,8 @@ export class MCPProtocolServer {
       serverName: this.serverName,
       version: "1.0.0",
       totalTools: Object.keys(tools).length,
+      totalResources: resources.length,
+      totalPrompts: prompts.length,
       exposedServerCount: serverIds.size,
     };
   }

@@ -44,7 +44,7 @@ export function createResourcesListHandler(
  * Creates a resources/read handler for MCP protocol
  */
 export function createResourcesReadHandler(gatewayService: GatewayService) {
-  return async (request: any) => {
+  return async (request: { params?: { uri?: string } }) => {
     const uri = request.params?.uri;
 
     logger.debug("Handling resources/read request", { uri });
@@ -76,7 +76,7 @@ export function createResourcesReadHandler(gatewayService: GatewayService) {
       });
 
       return result;
-    } catch (error: any) {
+    } catch (error) {
       logger.error("Failed to read resource", {
         uri,
         error: error instanceof Error ? error.message : String(error),
@@ -87,7 +87,7 @@ export function createResourcesReadHandler(gatewayService: GatewayService) {
           {
             uri,
             mimeType: "text/plain",
-            text: `Error reading resource: ${error.message || "Unknown error"}`,
+            text: `Error reading resource: ${error instanceof Error ? error.message : "Unknown error"}`,
           },
         ],
         isError: true,
