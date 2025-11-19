@@ -88,74 +88,69 @@ export class MCPProtocolServer {
 
       this.logger.info(`Registering ${Object.keys(tools).length} tools`);
 
-      // Register each tool with the MCP server
-      for (const [toolId, tool] of Object.entries(tools)) {
-        const _mcpTool = convertToMCPTool(toolId, tool);
+      // Register tools/list handler once
+      this.server.setRequestHandler(
+        {
+          method: "tools/list",
+        } as any,
+        async () => {
+          return {
+            tools: Object.entries(tools).map(([id, t]) =>
+              convertToMCPTool(id, t),
+            ),
+          };
+        },
+      );
 
-        this.server.setRequestHandler(
-          {
-            method: "tools/list",
-          } as any,
-          async () => {
+      // Register tools/call handler once
+      this.server.setRequestHandler(
+        {
+          method: "tools/call",
+        } as any,
+        async (request: any) => {
+          const toolName = request.params?.name;
+          const args = request.params?.arguments || {};
+
+          if (!toolName) {
             return {
-              tools: Object.entries(tools).map(([id, t]) =>
-                convertToMCPTool(id, t),
-              ),
+              content: [{ type: "text", text: "Error: Tool name is required" }],
+              isError: true,
             };
-          },
-        );
+          }
 
-        this.server.setRequestHandler(
-          {
-            method: "tools/call",
-          } as any,
-          async (request: any) => {
-            const toolName = request.params?.name;
-            const args = request.params?.arguments || {};
+          const targetTool = tools[toolName];
+          if (!targetTool) {
+            return {
+              content: [
+                { type: "text", text: `Error: Tool not found: ${toolName}` },
+              ],
+              isError: true,
+            };
+          }
 
-            if (!toolName) {
-              return {
-                content: [
-                  { type: "text", text: "Error: Tool name is required" },
-                ],
-                isError: true,
-              };
-            }
+          try {
+            const result = await this.gatewayService.executeToolCall(
+              targetTool._mcpServerId,
+              targetTool._originToolName,
+              args,
+            );
 
-            const targetTool = tools[toolName];
-            if (!targetTool) {
-              return {
-                content: [
-                  { type: "text", text: `Error: Tool not found: ${toolName}` },
-                ],
-                isError: true,
-              };
-            }
-
-            try {
-              const result = await this.gatewayService.executeToolCall(
-                targetTool._mcpServerId,
-                targetTool._originToolName,
-                args,
-              );
-
-              // Transform result to MCP format
-              return this.transformResult(result);
-            } catch (error: any) {
-              this.logger.error(`Tool call failed: ${toolName}`, error);
-              return {
-                content: [
-                  {
-                    type: "text",
-                    text: `Error: ${error.message || "Unknown error"}`,
-                  },
-                ],
-                isError: true,
-              };
-            }
-          },
-        );
-      }
+            // Transform result to MCP format
+            return this.transformResult(result);
+          } catch (error: any) {
+            this.logger.error(`Tool call failed: ${toolName}`, error);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Error: ${error.message || "Unknown error"}`,
+                },
+              ],
+              isError: true,
+            };
+          }
+        },
+      );
 
       this.logger.info(
         `MCP server initialized with ${Object.keys(tools).length} tools`,
@@ -199,5 +194,32 @@ export class MCPProtocolServer {
    */
   getServer(): Server {
     return this.server;
+  }
+
+  /**
+   * Get status information about the gateway
+   */
+  async getStatus(): Promise<{
+    enabled: boolean;
+    serverName: string;
+    version: string;
+    totalTools: number;
+    exposedServerCount: number;
+  }> {
+    const tools = this.presetConfig
+      ? await this.gatewayService.getPresetTools(this.presetConfig)
+      : {};
+
+    const serverIds = new Set(
+      Object.values(tools).map((tool) => tool._mcpServerId),
+    );
+
+    return {
+      enabled: true,
+      serverName: this.serverName,
+      version: "1.0.0",
+      totalTools: Object.keys(tools).length,
+      exposedServerCount: serverIds.size,
+    };
   }
 }
