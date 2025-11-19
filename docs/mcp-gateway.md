@@ -2,7 +2,7 @@
 
 ## Overview
 
-The MCP Gateway allows you to expose tools from your connected MCP servers as a unified MCP server endpoint. This enables external MCP clients like Claude Desktop, Cursor, and other MCP-compatible applications to connect to your Better Chatbot instance and access all your configured tools through a single endpoint.
+The MCP Gateway allows you to expose **tools, resources, and prompts** from your connected MCP servers as a unified MCP server endpoint. This enables external MCP clients like Claude Desktop, Cursor, and other MCP-compatible applications to connect to your Better Chatbot instance and access all your configured capabilities through a single endpoint.
 
 ## Architecture
 
@@ -14,12 +14,15 @@ External MCP Clients (Claude Desktop, Cursor, etc.)
 StreamableHTTP Transport (@modelcontextprotocol/sdk)
             ↓
       MCPProtocolServer
-     - tools/list handler
-     - tools/call handler
+     - tools/list & tools/call handlers
+     - resources/list & resources/read handlers
+     - prompts/list & prompts/get handlers
             ↓
        GatewayService
-     - Tool filtering
-     - Circuit breaker
+     - Tool filtering & execution
+     - Resource aggregation & reading
+     - Prompt aggregation & retrieval
+     - Circuit breaker for all capabilities
             ↓
      MCPClientsManager
             ↓
@@ -28,11 +31,67 @@ StreamableHTTP Transport (@modelcontextprotocol/sdk)
 
 ## Key Features
 
+- **Full MCP Protocol Support**: Tools, resources, and prompts
 - **OAuth Authentication**: Secure access using Google OAuth through your existing Better Chatbot account
-- **Preset Support**: Create multiple gateway configurations with different tool sets
+- **Preset Support**: Create multiple gateway configurations with different capability sets
 - **Tool Filtering**: Control which MCP servers and tools are exposed
+- **Resource Access**: Read files, documents, and data from connected servers
+- **Prompt Templates**: Access and execute parameterized prompts
 - **Circuit Breaker**: Built-in resilience with automatic failure handling
 - **Stateful Sessions**: Per-user gateway servers cached for performance
+
+## MCP Capabilities
+
+The gateway exposes three types of capabilities from your connected MCP servers:
+
+### Tools
+
+**Tools** are executable functions that perform actions or retrieve information.
+
+**Examples:**
+- `github::create-issue` - Create a new GitHub issue
+- `filesystem::read-file` - Read a file from the filesystem
+- `database::query` - Execute a database query
+
+**Usage in MCP Protocol:**
+- `tools/list` - List all available tools
+- `tools/call` - Execute a specific tool with arguments
+
+### Resources
+
+**Resources** are URI-addressable content that can be read by clients.
+
+**Examples:**
+- `file:///project/README.md` - Project documentation
+- `github://repo/issues` - GitHub issues for a repository
+- `database://tables/users` - Database table schema
+
+**Usage in MCP Protocol:**
+- `resources/list` - List all available resources
+- `resources/read` - Read content from a specific URI
+
+**Resource Types:**
+- **Text resources**: Markdown, code files, logs
+- **Binary resources**: Images, PDFs, archives
+- **Dynamic resources**: API responses, database queries
+
+### Prompts
+
+**Prompts** are reusable templates with dynamic arguments for generating LLM conversations.
+
+**Examples:**
+- `code-review` - Generate a code review prompt with file context
+- `bug-report` - Create a structured bug report
+- `documentation` - Generate documentation for a codebase
+
+**Usage in MCP Protocol:**
+- `prompts/list` - List all available prompts
+- `prompts/get` - Retrieve a prompt with specific arguments
+
+**Prompt Features:**
+- **Arguments**: Dynamic parameters (required/optional)
+- **Multi-message**: Support for conversation flows
+- **Embedded Resources**: Can reference resource URIs for context
 
 ## Getting Started
 
@@ -217,7 +276,13 @@ The gateway uses OAuth 2.0 with Google as the identity provider:
 
 **POST /api/mcp-gateway/[userId]/mcp**
 - Execute MCP protocol requests
-- Supports `tools/list` and `tools/call` methods
+- Supported methods:
+  - `tools/list` - List all available tools
+  - `tools/call` - Execute a specific tool
+  - `resources/list` - List all available resources
+  - `resources/read` - Read content from a resource URI
+  - `prompts/list` - List all available prompts
+  - `prompts/get` - Retrieve a prompt with arguments
 - Requires authentication
 
 **GET /api/mcp-gateway/[userId]/mcp**
@@ -234,8 +299,84 @@ The gateway uses OAuth 2.0 with Google as the identity provider:
 
 **POST /api/mcp-gateway/[userId]/mcp/[preset]**
 - Same as above but filtered by preset
-- Only exposes tools from the specified preset
+- Only exposes tools, resources, and prompts from the specified preset
 - Requires authentication
+
+### Example MCP Protocol Requests
+
+**List Tools:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list",
+  "params": {}
+}
+```
+
+**Call Tool:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "github::create-issue",
+    "arguments": {
+      "title": "Bug fix",
+      "body": "Description"
+    }
+  }
+}
+```
+
+**List Resources:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "resources/list",
+  "params": {}
+}
+```
+
+**Read Resource:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "resources/read",
+  "params": {
+    "uri": "file:///project/README.md"
+  }
+}
+```
+
+**List Prompts:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "prompts/list",
+  "params": {}
+}
+```
+
+**Get Prompt:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "prompts/get",
+  "params": {
+    "name": "code-review",
+    "arguments": {
+      "file": "src/index.ts",
+      "language": "typescript"
+    }
+  }
+}
+```
 
 ## Troubleshooting
 
@@ -289,8 +430,44 @@ The gateway uses OAuth 2.0 with Google as the identity provider:
 **Solutions**:
 1. Check network connectivity
 2. Verify backend MCP server is responding
-3. Review circuit breaker thresholds
+3. Review circuit breaker thresholds (30s default for tools)
 4. Check tool execution logs
+
+### Resource Access Issues
+
+**Problem**: Resource not found or cannot be read
+
+**Solutions**:
+1. Verify the resource URI is correct
+2. Check that the backend MCP server providing the resource is connected
+3. Ensure you have permission to access the resource
+4. Check the circuit breaker status (15s timeout for resources)
+
+**Problem**: Resource content is empty or corrupted
+
+**Solutions**:
+1. Verify the resource exists on the backend server
+2. Check the resource MIME type is supported
+3. For binary resources, ensure proper encoding
+4. Review resource read logs for errors
+
+### Prompt Retrieval Issues
+
+**Problem**: Prompt not found
+
+**Solutions**:
+1. Verify the prompt name is correct
+2. Check that the backend MCP server providing the prompt is connected
+3. List available prompts to see what's accessible
+4. Check the circuit breaker status (10s timeout for prompts)
+
+**Problem**: Prompt arguments error
+
+**Solutions**:
+1. Verify all required arguments are provided
+2. Check argument types match the prompt definition
+3. Review the prompt schema for valid argument names
+4. Check prompt execution logs for details
 
 ## Monitoring & Metrics
 
