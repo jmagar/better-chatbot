@@ -58,10 +58,11 @@ export const MCPCard = memo(function MCPCard({
   user,
   userName,
   userAvatar,
-}: MCPServerInfo & { user: BasicUser }) {
+  defaultCollapsed = true,
+}: MCPServerInfo & { user: BasicUser; defaultCollapsed?: boolean }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [visibilityChangeLoading, setVisibilityChangeLoading] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const t = useTranslations("MCP");
   const appStoreMutate = appStore((state) => state.mutate);
   const { mutate } = useSWRConfig();

@@ -113,42 +113,50 @@ export class MCPClientsManager {
    */
   async tools(): Promise<Record<string, VercelAIMcpTool>> {
     await this.waitInitialized();
-    return Array.from(this.clients.entries()).reduce(
-      (acc, [id, client]) => {
-        if (!client.client?.toolInfo?.length) return acc;
-        const clientName = client.name;
-        return {
-          ...acc,
-          ...client.client.toolInfo.reduce(
-            (bcc, tool) => {
-              return {
-                ...bcc,
-                [createMCPToolId(clientName, tool.name)]:
-                  VercelAIMcpToolTag.create({
-                    description: tool.description,
-                    inputSchema: jsonSchema(
-                      toAny({
-                        ...tool.inputSchema,
-                        properties: tool.inputSchema?.properties ?? {},
-                        additionalProperties: false,
-                      }),
-                    ),
-                    _originToolName: tool.name,
-                    _mcpServerName: clientName,
-                    _mcpServerId: id,
-                    execute: (params, options: ToolCallOptions) => {
-                      options?.abortSignal?.throwIfAborted();
-                      return this.toolCall(id, tool.name, params);
-                    },
-                  }),
-              };
+    const tools: Record<string, VercelAIMcpTool> = {};
+
+    for (const [id, client] of this.clients.entries()) {
+      if (!client.client?.toolInfo?.length) continue;
+      const clientName = client.name;
+
+      for (const tool of client.client.toolInfo) {
+        const toolId = createMCPToolId(clientName, tool.name);
+        try {
+          const rawSchema =
+            tool.inputSchema && typeof tool.inputSchema === "object"
+              ? {
+                  ...tool.inputSchema,
+                  type: "object",
+                  properties: tool.inputSchema.properties ?? {},
+                  additionalProperties: false,
+                }
+              : {
+                  type: "object",
+                  properties: {},
+                  additionalProperties: false,
+                };
+
+          tools[toolId] = VercelAIMcpToolTag.create({
+            description: tool.description,
+            inputSchema: jsonSchema(toAny(rawSchema)),
+            _originToolName: tool.name,
+            _mcpServerName: clientName,
+            _mcpServerId: id,
+            execute: (params, options: ToolCallOptions) => {
+              options?.abortSignal?.throwIfAborted();
+              return this.toolCall(id, tool.name, params);
             },
-            {} as Record<string, VercelAIMcpTool>,
-          ),
-        };
-      },
-      {} as Record<string, VercelAIMcpTool>,
-    );
+          });
+        } catch (error) {
+          this.logger.error(
+            `Failed to register MCP tool ${tool.name} from server ${clientName}`,
+            error,
+          );
+        }
+      }
+    }
+
+    return tools;
   }
   /**
    * Creates and adds a new client instance to memory only (no storage persistence)

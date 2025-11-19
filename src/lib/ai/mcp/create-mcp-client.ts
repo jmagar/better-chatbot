@@ -28,6 +28,7 @@ import { BASE_URL, IS_MCP_SERVER_REMOTE_ONLY, IS_VERCEL_ENV } from "lib/const";
 import { UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js";
 import { PgOAuthClientProvider } from "./pg-oauth-provider";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { ZodError } from "zod";
 
 type ClientOptions = {
   autoDisconnectSeconds?: number;
@@ -340,15 +341,27 @@ export class MCPClient {
   async updateToolInfo() {
     if (this.status === "connected" && this.client) {
       this.logger.info("Updating tool info");
-      const toolResponse = await this.client.listTools();
-      this.toolInfo = toolResponse.tools.map(
-        (tool) =>
-          ({
-            name: tool.name,
-            description: tool.description,
-            inputSchema: tool.inputSchema,
-          }) as MCPToolInfo,
-      );
+      try {
+        const toolResponse = await this.client.listTools();
+        this.toolInfo = toolResponse.tools.map(
+          (tool) =>
+            ({
+              name: tool.name,
+              description: tool.description,
+              inputSchema: tool.inputSchema,
+            }) as MCPToolInfo,
+        );
+      } catch (error) {
+        if (error instanceof ZodError) {
+          this.logger.error(
+            "Failed to parse MCP tool definitions with Zod, skipping tool info update",
+            error,
+          );
+        } else {
+          this.logger.error("Failed to update MCP tool info", error);
+        }
+        this.toolInfo = [];
+      }
     }
   }
 

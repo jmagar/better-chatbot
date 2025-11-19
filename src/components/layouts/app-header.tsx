@@ -10,11 +10,12 @@ import {
 } from "lucide-react";
 import { Button } from "ui/button";
 import { Separator } from "ui/separator";
+import { MCPIcon } from "ui/mcp-icon";
 
 import { useEffect, useMemo } from "react";
 import { ThreadDropdown } from "../thread-dropdown";
 import { appStore } from "@/app/store";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useShallow } from "zustand/shallow";
 import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
 import { useTranslations } from "next-intl";
@@ -27,6 +28,7 @@ export function AppHeader() {
   const [appStoreMutate] = appStore(useShallow((state) => [state.mutate]));
   const { toggleSidebar, open } = useSidebar();
   const currentPaths = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const showActionButtons = useMemo(() => {
@@ -96,6 +98,24 @@ export function AppHeader() {
       <div className="flex-1" />
       {showActionButtons && (
         <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size={"icon"}
+                variant={"ghost"}
+                className="bg-secondary/40"
+                onClick={() => {
+                  router.push("/mcp");
+                }}
+              >
+                <MCPIcon className="size-4 fill-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent align="end" side="bottom">
+              <div className="text-xs">{t("Layout.mcpConfiguration")}</div>
+            </TooltipContent>
+          </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

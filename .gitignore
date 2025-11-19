@@ -21,7 +21,7 @@ playwright-report/
 /.next/
 /out/
 .cache/
-node-compile-cache/
+node-compile-cache
 tsx-*/
 
 # production

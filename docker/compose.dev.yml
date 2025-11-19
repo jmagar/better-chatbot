@@ -1,0 +1,29 @@
+services:
+  better-chatbot_db:
+    image: postgres:17
+    container_name: better-chatbot_db
+    env_file:
+      - .env.dev.compose
+    networks:
+      - jakenet
+    ports:
+      - "53000:5432"
+    volumes:
+      - /mnt/cache/appdata/better-chatbot_db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  better-chatbot_cache:
+    image: redis:7-alpine
+    container_name: better-chatbot_cache
+    command: redis-server --appendonly yes --appendfsync everysec
+    ports:
+      - "53010:6379"
+    networks:
+      - jakenet
+    volumes:
+      - /mnt/cache/appdata/better-chatbot_cache:/data
+    restart: unless-stopped
+
+networks:
+  jakenet:
+    external: true

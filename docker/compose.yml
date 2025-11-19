@@ -5,7 +5,7 @@ services:
       dockerfile: ./docker/Dockerfile
     container_name: better-chatbot
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       - NO_HTTPS=1
     env_file:
@@ -25,7 +25,7 @@ services:
       - /mnt/cache/code:/code:rw
       - /mnt/cache/docs:/docs:rw
       - /mnt/user/data/:/data:ro
-      - /var/run/docker.sock:/var/run/docker.sock  # Add this line
+      - /var/run/docker.sock:/var/run/docker.sock # Add this line
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
 
@@ -36,6 +36,7 @@ services:
       - .env
     networks:
       - jakenet
+
     volumes:
       - /mnt/cache/appdata/better-chatbot_db:/var/lib/postgresql/data
     restart: unless-stopped
@@ -45,7 +46,7 @@ services:
     container_name: better-chatbot_cache
     command: redis-server --appendonly yes --appendfsync everysec
     ports:
-      - '6380:6379'
+      - "6380:6379"
     networks:
       - jakenet
     volumes:
