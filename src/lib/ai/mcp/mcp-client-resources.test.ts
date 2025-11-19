@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MCPClient } from "./create-mcp-client";
 import type { MCPServerConfig } from "app-types/mcp";
 
+// Mock server-only modules
+vi.mock("./pg-oauth-provider", () => ({
+  PgOAuthClientProvider: vi.fn(),
+}));
+
 describe("MCPClient - Resources Support", () => {
   let client: MCPClient;
   const mockConfig: MCPServerConfig = {

@@ -28,6 +28,8 @@ describe("MCPProtocolServer", () => {
     gatewayService = {
       getPresetTools: vi.fn(),
       executeToolCall: vi.fn(),
+      getPresetResources: vi.fn().mockResolvedValue([]),
+      getPresetPrompts: vi.fn().mockResolvedValue([]),
     } as any;
 
     // Create a sample preset config
