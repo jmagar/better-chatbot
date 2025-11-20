@@ -17,6 +17,7 @@ import {
 } from "./handlers/prompts-handler";
 import { createSamplingCreateMessageHandler } from "./handlers/sampling-handler";
 import { createElicitationCreateHandler } from "./handlers/elicitation-handler";
+import { createRootsListHandler } from "./handlers/roots-handler";
 
 /**
  * MCP Protocol Server for a specific preset or all capabilities
@@ -42,6 +43,7 @@ export class MCPProtocolServer {
           resources: {},
           prompts: {},
           sampling: {},
+          roots: {},
         },
       },
     );
@@ -126,8 +128,16 @@ export class MCPProtocolServer {
         elicitationCreateHandler,
       );
 
+      // Register roots handler
+      const rootsListHandler = createRootsListHandler(
+        this.gatewayService,
+        this.presetConfig,
+      );
+
+      this.server.setRequestHandler({ method: "roots/list" }, rootsListHandler);
+
       this.logger.info(
-        `MCP server initialized with ${Object.keys(tools).length} tools, resources, prompts, sampling, and elicitation`,
+        `MCP server initialized with ${Object.keys(tools).length} tools, resources, prompts, sampling, elicitation, and roots`,
       );
     } catch (error) {
       this.logger.error("Failed to initialize MCP server", error);
@@ -152,6 +162,7 @@ export class MCPProtocolServer {
     totalTools: number;
     totalResources: number;
     totalPrompts: number;
+    totalRoots: number;
     exposedServerCount: number;
   }> {
     const tools = this.presetConfig
@@ -166,6 +177,10 @@ export class MCPProtocolServer {
       ? await this.gatewayService.getPresetPrompts(this.presetConfig)
       : [];
 
+    const roots = this.presetConfig
+      ? await this.gatewayService.getPresetRoots(this.presetConfig)
+      : [];
+
     const serverIds = new Set(
       Object.values(tools).map((tool) => tool._mcpServerId),
     );
@@ -177,6 +192,7 @@ export class MCPProtocolServer {
       totalTools: Object.keys(tools).length,
       totalResources: resources.length,
       totalPrompts: prompts.length,
+      totalRoots: roots.length,
       exposedServerCount: serverIds.size,
     };
   }

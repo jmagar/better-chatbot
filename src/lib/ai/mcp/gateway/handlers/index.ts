@@ -23,3 +23,5 @@ export {
 export { createSamplingCreateMessageHandler } from "./sampling-handler";
 
 export { createElicitationCreateHandler } from "./elicitation-handler";
+
+export { createRootsListHandler } from "./roots-handler";

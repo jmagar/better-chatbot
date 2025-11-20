@@ -98,7 +98,10 @@ export class GatewayService {
         if (!client) {
           throw new Error(`Client ${serverId} not found`);
         }
-        return await client.client.getPrompt(promptName, args as Record<string, unknown>);
+        return await client.client.getPrompt(
+          promptName,
+          args as Record<string, unknown>,
+        );
       },
       {
         timeout: 10000, // 10 seconds for prompts
@@ -199,9 +202,13 @@ export class GatewayService {
         if (!serverConfig.enabled) continue;
 
         try {
-          const client = await this.mcpManager.getClient(serverConfig.mcpServerId);
+          const client = await this.mcpManager.getClient(
+            serverConfig.mcpServerId,
+          );
           if (!client) {
-            this.logger.warn("Client not found", { serverId: serverConfig.mcpServerId });
+            this.logger.warn("Client not found", {
+              serverId: serverConfig.mcpServerId,
+            });
             continue;
           }
 
@@ -290,9 +297,13 @@ export class GatewayService {
         if (!serverConfig.enabled) continue;
 
         try {
-          const client = await this.mcpManager.getClient(serverConfig.mcpServerId);
+          const client = await this.mcpManager.getClient(
+            serverConfig.mcpServerId,
+          );
           if (!client) {
-            this.logger.warn("Client not found", { serverId: serverConfig.mcpServerId });
+            this.logger.warn("Client not found", {
+              serverId: serverConfig.mcpServerId,
+            });
             continue;
           }
 
@@ -331,6 +342,75 @@ export class GatewayService {
       this.logger.error("Failed to get preset prompts", {
         presetId: config.id,
         error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get all roots from enabled servers in a preset
+   */
+  async getPresetRoots(config: GatewayPresetConfig): Promise<any[]> {
+    const startTime = Date.now();
+    this.logger.debug("Getting preset roots", { presetId: config.id });
+
+    try {
+      // Disabled presets return no roots
+      if (config.status !== "active") {
+        this.logger.warn("Preset is not active", {
+          presetId: config.id,
+          status: config.status,
+        });
+        return [];
+      }
+
+      const allRoots: any[] = [];
+
+      for (const serverConfig of config.servers) {
+        // Skip disabled servers
+        if (!serverConfig.enabled) continue;
+
+        try {
+          const client = await this.mcpManager.getClient(
+            serverConfig.mcpServerId,
+          );
+          if (!client) {
+            this.logger.warn("Client not found", {
+              serverId: serverConfig.mcpServerId,
+            });
+            continue;
+          }
+
+          const roots = await withTimeout(
+            client.listRoots(),
+            10000,
+            "Timeout listing roots",
+          );
+
+          allRoots.push(...roots);
+        } catch (error) {
+          this.logger.error("Failed to get roots from server", {
+            serverId: serverConfig.mcpServerId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          // Continue with other servers
+        }
+      }
+
+      const duration = Date.now() - startTime;
+      this.logger.info("Loaded preset roots", {
+        presetId: config.id,
+        rootCount: allRoots.length,
+        duration: `${duration}ms`,
+      });
+
+      return allRoots;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.error("Failed to get preset roots", {
+        presetId: config.id,
+        error: error instanceof Error ? error.message : String(error),
+        duration: `${duration}ms`,
       });
       throw error;
     }

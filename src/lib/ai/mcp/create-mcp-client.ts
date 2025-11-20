@@ -423,7 +423,10 @@ export class MCPClient {
   /**
    * Get a specific prompt with optional arguments
    */
-  async getPrompt(name: string, args?: Record<string, unknown>): Promise<any | null> {
+  async getPrompt(
+    name: string,
+    args?: Record<string, unknown>,
+  ): Promise<any | null> {
     if (this.status !== "connected" || !this.client) {
       return null;
     }
@@ -434,6 +437,29 @@ export class MCPClient {
     } catch (error) {
       this.logger.error("Failed to get prompt", name, error);
       return null;
+    }
+  }
+
+  /**
+   * List available file system roots
+   */
+  async listRoots(): Promise<any[]> {
+    if (this.status !== "connected" || !this.client) {
+      return [];
+    }
+    try {
+      this.logger.info("Listing roots");
+      const response = await this.client.listRoots();
+      const roots = response?.roots || [];
+      // Add server context metadata
+      return roots.map((root: any) => ({
+        ...root,
+        _mcpServerId: this.id,
+        _mcpServerName: this.name,
+      }));
+    } catch (error) {
+      this.logger.error("Failed to list roots", error);
+      throw error;
     }
   }
 
