@@ -115,7 +115,7 @@ const webStreamToBuffer = async (stream: ReadableStream<Uint8Array>) => {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
 
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     const { done, value } = await reader.read();
     if (done) {

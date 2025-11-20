@@ -6,7 +6,7 @@ import {
 } from "./create-mcp-clients-manager";
 import { FILE_BASED_MCP_CONFIG } from "lib/const";
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __mcpClientsManager__: MCPClientsManager;
 }
 

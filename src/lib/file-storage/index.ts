@@ -20,7 +20,7 @@ const resolveDriver = (): FileStorageDriver => {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __server__file_storage__: FileStorage | undefined;
 }
 

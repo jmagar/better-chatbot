@@ -9,10 +9,10 @@ export default getRequestConfig(async () => {
   const locale = await getLocaleAction();
 
   if (!defaultMessages) {
-    defaultMessages = (await import(`../../messages/en.json`)).default;
+    defaultMessages = (await import(`../messages/en.json`)).default;
   }
 
-  const messages = await safe(() => import(`../../messages/${locale}.json`))
+  const messages = await safe(() => import(`../messages/${locale}.json`))
     .map((m) => m.default)
     .orElse(defaultMessages);
 

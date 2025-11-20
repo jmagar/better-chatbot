@@ -120,7 +120,7 @@ export async function safePythonRun({
     const loadPyodide = await ensurePyodideLoaded();
 
     // Load Pyodide
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const pyodide = await loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
     });
