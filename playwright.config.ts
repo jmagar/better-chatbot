@@ -18,11 +18,11 @@ export default defineConfig({
   // Removed maxFailures - let tests run to completion and fail properly
   reporter: process.env.CI
     ? [
-        ["html", { open: "never", outputFolder: "playwright-report" }],
+        ["html", { open: "never", outputFolder: ".cache/playwright-report" }],
         ["list"],
-        ["json", { outputFile: "test-results/.last-run.json" }],
+        ["json", { outputFile: ".cache/test-results/.last-run.json" }],
       ]
-    : [["html"], ["list"]],
+    : [["html", { outputFolder: ".cache/playwright-report" }], ["list"]],
   use: {
     baseURL: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
     ignoreHTTPSErrors: true,

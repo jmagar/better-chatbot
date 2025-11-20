@@ -17,6 +17,7 @@ test-results/
 playwright-report/
 .env.test
 
+
 # next.js
 /.next/
 /out/
@@ -60,6 +61,7 @@ local-data
 .cursor
 *.ignore
 .mcp-config.json
+.mcp.json
 openai-compatible.config.ts
 certificates
 public/uploads
